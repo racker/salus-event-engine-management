@@ -1,0 +1,10 @@
+stream
+  |from()
+    .measurement('{{measurement}}')
+    .groupBy('{{groupBy}}')
+  |alert()
+    .stateChangesOnly()
+    .id('{{alertId}}')
+    .details('{{details}}')
+    .crit(lambda: {{critExpression}})
+    .topic('events')

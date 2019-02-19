@@ -1,0 +1,25 @@
+
+logging:
+  level:
+    com.rackspace.salus.event.manage: debug
+event:
+  discovery:
+    port-strategy:
+      host: localhost
+      starting-port: 9192
+    partitions: 2
+server:
+  port: 8087
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL5Dialect
+    properties:
+      hibernate:
+        generate_statistics: false
+    show-sql: true
+  datasource:
+    username: dev
+    password: pass
+    url: jdbc:mysql://localhost:3306/default?verifyServerCertificate=false&useSSL=false&requireSSL=false

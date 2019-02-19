@@ -1,0 +1,4 @@
+spring:
+  resources:
+    # we're REST only, no need for web content
+    add-mappings: false
