@@ -32,7 +32,6 @@ import org.hibernate.annotations.TypeDef;
 @Table(
     indexes = {
         @Index(name = "tenant_measures", columnList = "tenantId,measurement"),
-        @Index(name = "assigned_partition", columnList = "assignedPartition")
     }
 )
 @TypeDef(name = "json", typeClass = JsonStringType.class)
@@ -50,11 +49,6 @@ public class EventEngineTask {
 
   @Column(nullable = false)
   String taskId;
-
-  int assignedPartition;
-
-  @Column(columnDefinition = "text")
-  String computedTickScript;
 
   @Type(type = "json")
   @Column(nullable = false, columnDefinition = "json")

@@ -23,4 +23,6 @@ import org.springframework.data.repository.CrudRepository;
 public interface EventEngineTaskRepository extends CrudRepository<EventEngineTask, Long> {
 
   List<EventEngineTask> findByTenantId(String tenantId);
+
+  List<EventEngineTask> findByTenantIdAndMeasurement(String tenantId, String measurement);
 }

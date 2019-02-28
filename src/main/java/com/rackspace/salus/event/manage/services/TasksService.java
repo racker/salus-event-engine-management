@@ -24,18 +24,15 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.kapacitor.DbRp;
 import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
-import com.rackspace.salus.event.manage.model.kapacitor.Var;
 import com.rackspace.salus.event.manage.repositories.EventEngineTaskRepository;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -73,47 +70,51 @@ public class TasksService {
         .status(Status.enabled)
         .build();
 
-    final EngineInstance engineInstance = eventEnginePicker
-        .pickRecipient(tenantId, in.getMeasurement());
+    for (EngineInstance engineInstance : eventEnginePicker.pickAll()) {
+      log.debug("Sending task={} to kapacitor={}", taskId, engineInstance);
 
-    log.debug("Sending task={} to kapacitor={}", taskId, engineInstance);
+      final ResponseEntity<Task> response = restTemplate.postForEntity("http://{host}:{port}/kapacitor/v1/tasks",
+          task,
+          Task.class,
+          engineInstance.getHost(), engineInstance.getPort()
+      );
 
-    final ResponseEntity<Task> response = restTemplate.postForEntity("http://{host}:{port}/kapacitor/v1/tasks",
-        task,
-        Task.class,
-        engineInstance.getHost(), engineInstance.getPort()
-    );
+      if (response.getStatusCode().isError()) {
+        String details = response.getBody() != null ? response.getBody().getError() : "";
+        throw new BackendException(response,
+            String.format("HTTP error while creating task=%s on instance=%s: %s", task, engineInstance, details)
+        );
+      }
 
-    if (response.getStatusCode().isError()) {
-      String details = response.getBody() != null ? response.getBody().getError() : "";
-      throw new BackendException(response, "Failed to create task: "+details);
+      final Task respTask = response.getBody();
+      if (respTask == null) {
+        throw new BackendException(null,
+            String.format("Empty engine response while creating task=%s on instance=%s", task, engineInstance)
+        );
+      }
+
+      if (StringUtils.hasText(respTask.getError())) {
+        throw new BackendException(response,
+            String.format("Engine error while creating task=%s on instance=%s: %s", task, engineInstance, respTask.getError())
+        );
+      }
     }
-
-    final Task respTask = response.getBody();
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
         .setTaskId(taskId)
-        .setAssignedPartition(engineInstance.getPartition())
-        .setComputedTickScript(respTask.getScript())
         .setScenario(in.getScenario());
 
     return eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  private Map<String, Var> buildVars(Map<String, Object> vars) {
-    return vars.entrySet().stream()
-        .collect(Collectors.toMap(
-            Entry::getKey,
-            entry -> Var.from(entry.getValue())
-        ));
+  public List<EventEngineTask> getTasks(String tenantId) {
+    return eventEngineTaskRepository.findByTenantId(tenantId);
   }
 
-  public List<EventEngineTask> getTasks(String tenantId) {
-
-    //TODO query the assigned kapacitor for state and stats details
-    return eventEngineTaskRepository.findByTenantId(tenantId);
+  public List<EventEngineTask> getTasks(String tenantId, String measurement) {
+    return eventEngineTaskRepository.findByTenantIdAndMeasurement(tenantId, measurement);
   }
 
   public void deleteTask(String tenantId, long taskDbId) {
@@ -129,15 +130,13 @@ public class TasksService {
 
     eventEngineTaskRepository.delete(eventEngineTask);
 
-    final EngineInstance engineInstance = eventEnginePicker
-        .pickUsingPartition(eventEngineTask.getAssignedPartition());
-
-    log.debug("Deleting kapacitorTask={} from instance={}", eventEngineTask.getTaskId(), engineInstance);
-    restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{taskId}",
-        engineInstance.getHost(),
-        engineInstance.getPort(),
-        eventEngineTask.getTaskId()
-    );
+    for (EngineInstance engineInstance : eventEnginePicker.pickAll()) {
+      log.debug("Deleting kapacitorTask={} from instance={}", eventEngineTask.getTaskId(), engineInstance);
+      restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{taskId}",
+          engineInstance.getHost(),
+          engineInstance.getPort(),
+          eventEngineTask.getTaskId()
+      );
+    }
   }
-
 }

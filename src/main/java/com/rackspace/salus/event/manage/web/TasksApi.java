@@ -63,6 +63,15 @@ public class TasksApi {
         .collect(Collectors.toList());
   }
 
+  @GetMapping("{tenantId}/{measurement}")
+  public List<EventEngineTaskDTO> getTasksByMeasurement(@PathVariable String tenantId,
+                                                        @PathVariable String measurement) {
+
+    return tasksService.getTasks(tenantId, measurement).stream()
+        .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class))
+        .collect(Collectors.toList());
+  }
+
   @DeleteMapping("{tenantId}/{taskId}")
   public void deleteTask(@PathVariable String tenantId,
                          @PathVariable long taskId) {
