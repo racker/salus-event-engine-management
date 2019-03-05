@@ -18,9 +18,9 @@ package com.rackspace.salus.event.manage.entities;
 
 import com.rackspace.salus.event.manage.model.scenarios.Scenario;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
@@ -38,8 +38,9 @@ import org.hibernate.annotations.TypeDef;
 @Data
 public class EventEngineTask {
 
-  @Id @GeneratedValue
-  Long id;
+  @Id
+  @org.hibernate.annotations.Type(type="uuid-char")
+  UUID id;
 
   @Column(nullable = false)
   String tenantId;

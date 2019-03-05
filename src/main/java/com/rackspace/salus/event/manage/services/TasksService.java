@@ -25,8 +25,10 @@ import com.rackspace.salus.event.manage.model.kapacitor.DbRp;
 import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
 import com.rackspace.salus.event.manage.repositories.EventEngineTaskRepository;
+import com.rackspace.salus.event.manage.services.TaskIdGenerator.TaskId;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -59,9 +61,9 @@ public class TasksService {
 
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
-    final String taskId = taskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
+    final TaskId taskId = taskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
     final Task task = Task.builder()
-        .id(taskId)
+        .id(taskId.getKapacitorTaskId())
         .dbrps(Collections.singletonList(DbRp.builder()
             .db(tenantId)
             .rp(InfluxScope.INGEST_RETENTION_POLICY)
@@ -101,9 +103,10 @@ public class TasksService {
     }
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
+        .setId(taskId.getBaseId())
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
-        .setTaskId(taskId)
+        .setTaskId(taskId.getKapacitorTaskId())
         .setScenario(in.getScenario());
 
     return eventEngineTaskRepository.save(eventEngineTask);
@@ -117,7 +120,7 @@ public class TasksService {
     return eventEngineTaskRepository.findByTenantIdAndMeasurement(tenantId, measurement);
   }
 
-  public void deleteTask(String tenantId, long taskDbId) {
+  public void deleteTask(String tenantId, UUID taskDbId) {
 
     final EventEngineTask eventEngineTask = eventEngineTaskRepository.findById(taskDbId)
         .orElseThrow(() -> new NotFoundException("Unable to find the requested event engine task"));

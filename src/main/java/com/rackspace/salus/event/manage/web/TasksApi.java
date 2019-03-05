@@ -23,6 +23,7 @@ import com.rackspace.salus.event.manage.model.CreateTaskResponse;
 import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.services.TasksService;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -74,7 +75,7 @@ public class TasksApi {
 
   @DeleteMapping("{tenantId}/{taskId}")
   public void deleteTask(@PathVariable String tenantId,
-                         @PathVariable long taskId) {
+                         @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);
   }
 }

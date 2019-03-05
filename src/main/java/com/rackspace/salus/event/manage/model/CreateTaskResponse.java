@@ -17,11 +17,12 @@
 package com.rackspace.salus.event.manage.model;
 
 import com.rackspace.salus.event.manage.model.scenarios.Scenario;
+import java.util.UUID;
 import lombok.Data;
 
 @Data
 public class CreateTaskResponse {
-  Long id;
+  UUID id;
   String tenantId;
   String measurement;
   String label;
