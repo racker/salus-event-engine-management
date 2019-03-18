@@ -39,7 +39,7 @@ import org.hibernate.annotations.TypeDef;
 public class EventEngineTask {
 
   @Id
-  @org.hibernate.annotations.Type(type="uuid-char")
+  @Type(type="uuid-char")
   UUID id;
 
   @Column(nullable = false)
