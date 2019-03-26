@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.scenarios;
+package com.rackspace.salus.event.manage.types;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-
-@JsonTypeInfo(use = Id.MINIMAL_CLASS, property = "type")
-public abstract class Scenario {
-
+public enum ThresholdOperator {
+  GREATER_THAN(">"),
+  GREATER_THAN_OR_EQUAL_TO,
+  LESS_THAN,
+  LESS_THAN_OR_EQUAL_TO
 }

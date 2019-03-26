@@ -16,7 +16,7 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
+import com.rackspace.salus.event.manage.types.ThresholdOperator
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -27,6 +27,13 @@ public class CreateTask {
   @NotEmpty
   String measurement;
 
-  @NotNull @Valid
-  Scenario scenario;
+  @NotEmpty
+  String field;
+
+  @NotEmpty
+  String thresholdOperatorString;
+  
+  @NotEmpty
+  Number threshold;
+
 }

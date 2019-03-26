@@ -16,8 +16,9 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
 import java.util.UUID;
+
+import com.rackspace.salus.event.manage.types.ThresholdOperator;
 import lombok.Data;
 
 @Data
@@ -26,6 +27,7 @@ public class EventEngineTaskDTO {
   String tenantId;
   String measurement;
   String label;
-  Scenario scenario;
-
+  String field;
+  ThresholdOperator thresholdOperator;
+  Number threshold;
 }

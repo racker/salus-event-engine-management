@@ -16,7 +16,7 @@
 
 package com.rackspace.salus.event.manage.entities;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
+import com.rackspace.salus.event.manage.types.ThresholdOperator
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -51,7 +51,13 @@ public class EventEngineTask {
   @Column(nullable = false)
   String taskId;
 
-  @Type(type = "json")
-  @Column(nullable = false, columnDefinition = "json")
-  Scenario scenario;
+  @Column(nullable = false)
+  String field;
+
+  @Column(nullable = false)
+  ThresholdOperator thresholdOperator;
+
+  @Column(nullable = false)
+  Number threshold;
+  
 }
