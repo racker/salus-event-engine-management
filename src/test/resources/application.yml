@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    platform: h2
+  jpa:
+    hibernate:
+      # We need to customize the json column type for h2 via schema sql, but we can't do that and
+      # use Hibernate auto DDL:
+      # https://docs.spring.io/spring-boot/docs/current/reference/html/howto-database-initialization.html#howto-initialize-a-database-using-spring-jdbc
+      ddl-auto: none
