@@ -16,7 +16,7 @@
 
 package com.rackspace.salus.event.manage.entities;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
+import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -53,5 +53,5 @@ public class EventEngineTask {
 
   @Type(type = "json")
   @Column(nullable = false, columnDefinition = "json")
-  Scenario scenario;
+  TaskParameters taskParameters;
 }

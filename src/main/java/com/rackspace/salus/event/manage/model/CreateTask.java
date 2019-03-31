@@ -22,11 +22,10 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class TaskParameters {
+public class CreateTask {
   @NotEmpty
-  String field;
-  @NotNull
-  Number threshold;
-  @NotEmpty
-  String comparator;
+  String measurement;
+
+  @NotNull @Valid
+  TaskParameters taskParameters;
 }

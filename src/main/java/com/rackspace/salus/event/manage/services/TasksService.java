@@ -29,9 +29,12 @@ import com.rackspace.salus.event.manage.services.TaskIdGenerator.TaskId;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import com.rackspace.salus.event.manage.types.Comparator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -63,6 +66,11 @@ public class TasksService {
 
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
+    if (Comparator.convertString.get(in.getTaskParameters().getComparator()) == null) {
+        throw new BackendException(new ResponseEntity<>(HttpStatus.BAD_REQUEST),
+                "Invalid comparator " + in.getTaskParameters().getComparator());
+    }
+
     final TaskId taskId = taskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
     final Task task = Task.builder()
         .id(taskId.getKapacitorTaskId())
@@ -70,7 +78,7 @@ public class TasksService {
             .db(accountQualifierService.convertFromTenant(tenantId))
             .rp(InfluxScope.INGEST_RETENTION_POLICY)
             .build()))
-        .script(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getScenario()))
+        .script(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getTaskParameters()))
         .status(Status.enabled)
         .build();
 
@@ -109,7 +117,7 @@ public class TasksService {
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
         .setTaskId(taskId.getKapacitorTaskId())
-        .setScenario(in.getScenario());
+        .setTaskParameters(in.getTaskParameters());
 
     return eventEngineTaskRepository.save(eventEngineTask);
   }

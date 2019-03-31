@@ -16,9 +16,7 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import com.rackspace.salus.event.manage.model.scenarios.Falling;
-import com.rackspace.salus.event.manage.model.scenarios.Rising;
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
+import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -53,34 +51,12 @@ public class TickScriptBuilder {
     this.taskIdGenerator = taskIdGenerator;
   }
 
-  public String build(String tenantId, String measurement, Scenario scenario) {
-
-    if (scenario instanceof Rising) {
-      return build(tenantId, measurement, ((Rising) scenario));
-    } else if (scenario instanceof Falling) {
-      return build(tenantId, measurement, ((Falling) scenario));
-    } else {
-      throw new IllegalArgumentException("Unsupport scenario type: " + scenario.getClass());
-    }
-  }
-
-  private String build(String tenantId, String measurement, Rising scenario) {
-
+  public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
     return taskTemplate.execute(TaskContext.builder()
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, scenario.getField()))
+        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" > %s", scenario.getField(), scenario.getThreshold()))
-        .build());
-  }
-
-  private String build(String tenantId, String measurement, Falling scenario) {
-
-    return taskTemplate.execute(TaskContext.builder()
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, scenario.getField()))
-        .measurement(measurement)
-        .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" < %s", scenario.getField(), scenario.getThreshold()))
+        .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
         .build());
   }
 

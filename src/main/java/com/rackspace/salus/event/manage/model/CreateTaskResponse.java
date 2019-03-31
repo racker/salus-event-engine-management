@@ -16,7 +16,6 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
 import java.util.UUID;
 import lombok.Data;
 
@@ -26,5 +25,5 @@ public class CreateTaskResponse {
   String tenantId;
   String measurement;
   String label;
-  Scenario scenario;
+  TaskParameters taskParameters;
 }
