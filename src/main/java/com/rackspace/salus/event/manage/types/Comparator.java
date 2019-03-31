@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.scenarios;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+package com.rackspace.salus.event.manage.types;
 
-@JsonTypeInfo(use = Id.MINIMAL_CLASS, property = "type")
-public abstract class Scenario {
+import java.util.HashMap;
 
+public enum Comparator  {
+
+  GREATER_THAN,
+  GREATER_THAN_OR_EQUAL_TO,
+  LESS_THAN,
+  LESS_THAN_OR_EQUAL_TO;
+
+  static HashMap<String, Comparator> convertString = new HashMap();
+  static {
+      convertString.put(">", GREATER_THAN);
+      convertString.put("<", LESS_THAN);
+      convertString.put(">=", GREATER_THAN_OR_EQUAL_TO);
+      convertString.put("<=", LESS_THAN_OR_EQUAL_TO);
+  }
 }
