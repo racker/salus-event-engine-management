@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.scenarios;
+package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import lombok.Data;
+
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-@Data @EqualsAndHashCode(callSuper = false)
-// re-declare type info in order to specify concrete defaultImpl when deserializing this directly
-@JsonTypeInfo(use = Id.MINIMAL_CLASS, property = "type", defaultImpl = Falling.class)
-public class Falling extends Scenario {
+@Data
+public class TaskParameters {
   @NotEmpty
   String field;
   @NotNull
   Number threshold;
+  @NotEmpty
+  String comparator;
 }

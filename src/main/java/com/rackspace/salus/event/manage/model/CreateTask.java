@@ -16,7 +16,6 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.rackspace.salus.event.manage.model.scenarios.Scenario;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -28,5 +27,5 @@ public class CreateTask {
   String measurement;
 
   @NotNull @Valid
-  Scenario scenario;
+  TaskParameters taskParameters;
 }
