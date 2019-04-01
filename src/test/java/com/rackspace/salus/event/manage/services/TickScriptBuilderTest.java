@@ -28,7 +28,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @Import({TickScriptBuilder.class, TaskIdGenerator.class})
-@DataJpaTest
 public class TickScriptBuilderTest {
 
   @Autowired
