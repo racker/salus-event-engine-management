@@ -66,7 +66,7 @@ public class TasksService {
 
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
-    if (Comparator.convertString.get(in.getTaskParameters().getComparator()) == null) {
+    if (!Comparator.valid(in.getTaskParameters().getComparator())) {
         throw new BackendException(new ResponseEntity<>(HttpStatus.BAD_REQUEST),
                 "Invalid comparator " + in.getTaskParameters().getComparator());
     }
