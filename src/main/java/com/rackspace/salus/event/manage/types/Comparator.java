@@ -26,7 +26,7 @@ public enum Comparator  {
   LESS_THAN,
   LESS_THAN_OR_EQUAL_TO;
 
-  static private HashMap<String, Comparator> convertString = new HashMap();
+  static private HashMap<String, Comparator> convertString = new HashMap<>();
   static {
       convertString.put(">", GREATER_THAN);
       convertString.put("<", LESS_THAN);

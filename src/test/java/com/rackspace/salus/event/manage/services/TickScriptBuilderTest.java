@@ -16,32 +16,13 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-
-import com.rackspace.salus.event.discovery.DiscoveryProperties;
-import com.rackspace.salus.event.discovery.DiscoveryServiceModule;
-import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.model.TaskParameters;
-import com.samskivert.mustache.Escapers;
-import com.samskivert.mustache.Mustache;
-import com.samskivert.mustache.Mustache.Compiler;
-import com.samskivert.mustache.Template;
-
-import java.util.Collections;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.Resource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 
@@ -54,7 +35,7 @@ public class TickScriptBuilderTest {
   TickScriptBuilder tickScriptBuilder;
 
   @Test
-  public void testBuild() throws Exception {
+  public void testBuild() {
     String expectedString = "stream\n  |from()\n    .measurement('measurement')\n" +
             "    .groupBy('resourceId')\n  |alert()\n    .stateChangesOnly()\n" +
             "    .id('tenant:{{index .Tags \"system.resourceId\"}}:measurement:field')\n" +
