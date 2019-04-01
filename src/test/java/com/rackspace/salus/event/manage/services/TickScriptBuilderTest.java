@@ -36,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -45,11 +46,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
-@Import({TickScriptBuilder.class})
+@Import({TickScriptBuilder.class, TaskIdGenerator.class})
+@DataJpaTest
 public class TickScriptBuilderTest {
-@MockBean
-EventEnginePicker ep;
 
   @Autowired
   TickScriptBuilder tickScriptBuilder;
