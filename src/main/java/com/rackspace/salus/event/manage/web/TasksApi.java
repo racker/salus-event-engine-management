@@ -25,6 +25,8 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,8 +37,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("/api/tasks/tenant")
+@Api(description = "Monitor operations", authorizations = {
+        @Authorization(value = "repose_auth",
+                scopes = {
+                        @AuthorizationScope(scope = "write:monitor", description = "modify Monitors in your account"),
+                        @AuthorizationScope(scope = "read:monitor", description = "read your Monitors"),
+                        @AuthorizationScope(scope = "delete:monitor", description = "delete your Monitors")
+                })
+})
 public class TasksApi {
 
   private final TasksService tasksService;
@@ -49,6 +60,8 @@ public class TasksApi {
   }
 
   @PostMapping("{tenantId}")
+  @ApiOperation(value = "Creates Task for Tenant")
+  @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
   public CreateTaskResponse createTask(@PathVariable String tenantId,
                                        @RequestBody @Validated CreateTask task) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
@@ -57,6 +70,7 @@ public class TasksApi {
   }
 
   @GetMapping("{tenantId}")
+  @ApiOperation(value = "Gets all Tasks for the specific Tenant")
   public List<EventEngineTaskDTO> getTasks(@PathVariable String tenantId) {
 
     return tasksService.getTasks(tenantId).stream()
@@ -65,6 +79,7 @@ public class TasksApi {
   }
 
   @GetMapping("{tenantId}/{measurement}")
+  @ApiOperation(value = "Gets Tasks for Tenant where the Measurement matches")
   public List<EventEngineTaskDTO> getTasksByMeasurement(@PathVariable String tenantId,
                                                         @PathVariable String measurement) {
 
@@ -74,6 +89,8 @@ public class TasksApi {
   }
 
   @DeleteMapping("{tenantId}/{taskId}")
+  @ApiOperation(value = "Deletes Task for Tenant")
+  @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
   public void deleteTask(@PathVariable String tenantId,
                          @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);
