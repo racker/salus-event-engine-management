@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/tasks/tenant")
+@RequestMapping("/api/tasks/")
 @Api(description = "Monitor operations", authorizations = {
         @Authorization(value = "repose_auth",
                 scopes = {

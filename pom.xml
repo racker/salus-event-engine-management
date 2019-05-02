@@ -205,6 +205,9 @@
           <mainClass>com.rackspace.salus.salus_tools.converter.SwaggerJsonConverter</mainClass>
           <arguments>
             <argument>${project.build.directory}/generated/swagger</argument>
+            <argument>{tenantId}</argument>
+            <argument>tasks/</argument>
+            <argument>eventTasks</argument>
           </arguments>
         </configuration>
       </plugin>
