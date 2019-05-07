@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage.config;
 
 import java.util.Map;
+import javax.validation.constraints.NotEmpty;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -31,21 +32,24 @@ public class TenantMappingProperties {
    * by mapping a tenant type prefix given as a key here into a qualified account with the mapped
    * account type value.
    */
-  Map<String,String> tenantToAccountTypes;
+  Map<String,String> tenantPrefixToAccountTypes;
 
   /**
    * When no prefix is found on a given tenant, this is the account type prefix that will be
    * pre-pended to the tenant value separated by the
    */
-  String defaultAccountType;
+  @NotEmpty
+  String defaultAccountType = "UNKNOWN";
 
   /**
    * The delimiter to expect when processing tenant values.
    */
+  @NotEmpty
   String tenantDelimiter = ":";
 
   /**
    * The delimiter to use when constructing a qualified account value.
    */
+  @NotEmpty
   String qualifiedAccountDelimiter = ":";
 }

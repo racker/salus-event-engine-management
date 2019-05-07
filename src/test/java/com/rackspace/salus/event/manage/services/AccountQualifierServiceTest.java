@@ -33,11 +33,11 @@ public class AccountQualifierServiceTest {
 
     assertThat(
         service.convertFromTenant("123456"),
-        equalTo("123456")
+        equalTo("UNKNOWN:123456")
     );
     assertThat(
         service.convertFromTenant("any:123456"),
-        equalTo("any:123456")
+        equalTo("UNKNOWN:123456")
     );
 
   }
@@ -45,7 +45,7 @@ public class AccountQualifierServiceTest {
   @Test
   public void convertFromTenant_noTenantPrefix() {
     final TenantMappingProperties properties = new TenantMappingProperties()
-        .setTenantToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
+        .setTenantPrefixToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
         .setDefaultAccountType("UNKNOWN");
 
     final AccountQualifierService service = new AccountQualifierService(properties);
@@ -57,21 +57,10 @@ public class AccountQualifierServiceTest {
 
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void convertFromTenant_noTenantPrefix_noDefaultConfig() {
-    final TenantMappingProperties properties = new TenantMappingProperties()
-        .setTenantToAccountTypes(Collections.singletonMap("hybrid", "CORE"));
-
-    final AccountQualifierService service = new AccountQualifierService(properties);
-
-    service.convertFromTenant("123456"); // should fail
-
-  }
-
   @Test
   public void convertFromTenant_tenantPrefixKnown() {
     final TenantMappingProperties properties = new TenantMappingProperties()
-        .setTenantToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
+        .setTenantPrefixToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
         .setDefaultAccountType("UNKNOWN");
 
     final AccountQualifierService service = new AccountQualifierService(properties);
@@ -86,7 +75,7 @@ public class AccountQualifierServiceTest {
   @Test
   public void convertFromTenant_tenantPrefixUnknown() {
     final TenantMappingProperties properties = new TenantMappingProperties()
-        .setTenantToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
+        .setTenantPrefixToAccountTypes(Collections.singletonMap("hybrid", "CORE"))
         .setDefaultAccountType("UNKNOWN");
 
     final AccountQualifierService service = new AccountQualifierService(properties);

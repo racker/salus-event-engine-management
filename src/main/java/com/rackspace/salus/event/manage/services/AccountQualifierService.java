@@ -20,7 +20,6 @@ import com.rackspace.salus.event.manage.config.TenantMappingProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -36,19 +35,9 @@ public class AccountQualifierService {
 
   public String convertFromTenant(String tenantId) {
 
-    if (properties.getTenantToAccountTypes() == null) {
-      log.debug("Skipping tenant type mapping since configuration is absent");
-      return tenantId;
-    }
-
     final String[] tenantParts = tenantId.split(properties.getTenantDelimiter(), 2);
 
     if (tenantParts.length == 1) {
-      Assert.state(
-          properties.getDefaultAccountType() != null,
-          "defaultAccountType needs to be configured in TenantMappingProperties"
-      );
-
       log.debug("No prefix on tenant, mapping qualified account with default type");
       return properties.getDefaultAccountType() +
           properties.getQualifiedAccountDelimiter() +
@@ -57,7 +46,8 @@ public class AccountQualifierService {
 
     final String tenantPrefix = tenantParts[0];
 
-    final String accountType = properties.getTenantToAccountTypes().get(tenantPrefix);
+    final String accountType = properties.getTenantPrefixToAccountTypes() != null ?
+        properties.getTenantPrefixToAccountTypes().get(tenantPrefix) : null;
     if (StringUtils.hasText(accountType)) {
       log.debug("Found accountType={} for tenant prefix={}", accountType, tenantPrefix);
       return accountType +

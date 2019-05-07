@@ -7,7 +7,7 @@ event:
     port-strategy:
       host: localhost
       starting-port: 9192
-    partitions: 2
+      partitions: 2
 server:
   port: 8087
 spring:
