@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.telemetry.model.LabelNamespaces;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -34,6 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+
+import static com.rackspace.salus.telemetry.model.LabelNamespaces.MONITORING_SYSTEM_METADATA;
 
 @Component
 public class TickScriptBuilder {
@@ -76,8 +79,7 @@ public class TickScriptBuilder {
         builder.append(" AND ");
       }
 
-      //  This should get properly qualified in its own function
-      builder.append("\"monitoring_system.metadata." + tuple.getKey() + "\" == '" + tuple.getValue()+"'");
+      builder.append("if(isPresent(\""+LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA,tuple.getKey()) + "\"), \""+ LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA,tuple.getKey()) +"\" == '" + tuple.getValue()+"', FALSE )");
       first++;
     }
     return builder.toString();
