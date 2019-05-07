@@ -60,5 +60,5 @@ public class EventEngineTask {
    */
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name="task_labels", joinColumns = @JoinColumn(name="id"))
-  Map<String,String> labels;
+  Map<String,String> labelSelector;
 }

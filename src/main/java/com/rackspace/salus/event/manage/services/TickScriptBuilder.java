@@ -77,7 +77,7 @@ public class TickScriptBuilder {
       }
 
       //  This should get properly qualified in its own function
-      builder.append("\"system.systemMetadata." + tuple.getKey() + "\" == \"" + tuple.getValue()+"\"");
+      builder.append("\"monitoring_system.metadata." + tuple.getKey() + "\" == '" + tuple.getValue()+"'");
       first++;
     }
     return builder.toString();
