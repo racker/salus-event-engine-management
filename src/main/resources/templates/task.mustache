@@ -2,6 +2,7 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
+  |where(lambda: {{labelSelectorExpression}})
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')

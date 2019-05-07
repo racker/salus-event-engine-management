@@ -20,6 +20,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 @Data
 public class TaskParameters {
@@ -29,4 +30,6 @@ public class TaskParameters {
   Number threshold;
   @NotEmpty
   String comparator;
+
+  Map<String, String> labelSelector;
 }

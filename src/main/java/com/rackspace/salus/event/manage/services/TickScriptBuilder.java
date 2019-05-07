@@ -23,6 +23,10 @@ import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -53,6 +57,8 @@ public class TickScriptBuilder {
 
   public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
     return taskTemplate.execute(TaskContext.builder()
+            //how exactly do I want to build this? I could add it to the TaskObject. Or I could just create a function here...
+        .labelSelectorExpression(buildLabelSelectorQuery(taskParameters))
         .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
         .measurement(measurement)
         .details("task={{.TaskName}}")
@@ -60,8 +66,26 @@ public class TickScriptBuilder {
         .build());
   }
 
+  private String buildLabelSelectorQuery(TaskParameters taskParameters) {
+    StringBuilder builder = new StringBuilder();
+    int first = 0;
+
+    Set<Map.Entry<String, String>> labels = taskParameters.getLabelSelector().entrySet();
+    for(Map.Entry<String, String> tuple: labels) {
+      if(first != 0) {
+        builder.append(" AND ");
+      }
+
+      //  This should get properly qualified in its own function
+      builder.append("\"system.systemMetadata." + tuple.getKey() + "\" == \"" + tuple.getValue()+"\"");
+      first++;
+    }
+    return builder.toString();
+  }
+
   @Data @Builder
   public static class TaskContext {
+    String labelSelectorExpression;
     String measurement;
     String alertId;
     String critExpression;

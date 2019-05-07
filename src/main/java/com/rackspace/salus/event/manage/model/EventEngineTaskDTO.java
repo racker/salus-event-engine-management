@@ -17,6 +17,8 @@
 package com.rackspace.salus.event.manage.model;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
+
+import java.util.Map;
 import java.util.UUID;
 import lombok.Data;
 
