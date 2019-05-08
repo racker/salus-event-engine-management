@@ -24,7 +24,6 @@ import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -78,22 +77,19 @@ public class TickScriptBuilder {
         builder.append(" AND ");
       }
 
-      builder.append(
-              "if(isPresent(\""+
-                      applyNamespace(tuple.getKey()) +
-                      "\"), \""+ //end of isPresent
-                      applyNamespace(tuple.getKey()) +
-                      "\" == '" +
-                      tuple.getValue()+
-                      "', FALSE )");
+      String namespacedKey = LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA, tuple.getKey());
+      builder.append("if(isPresent(\"");
+      builder.append(namespacedKey);
+      builder.append("\"), \""); //end of isPresent\
+      builder.append(namespacedKey);
+      builder.append("\" == '");
+      builder.append(tuple.getValue());
+      builder.append("', FALSE )");
       first++;
     }
     return builder.toString();
   }
 
-  private String applyNamespace(String key) {
-    return LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA, key);
-  }
 
   @Data @Builder
   public static class TaskContext {

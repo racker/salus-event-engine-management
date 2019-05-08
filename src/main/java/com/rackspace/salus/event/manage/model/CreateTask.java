@@ -21,7 +21,6 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.Map;
 
 @Data
 public class CreateTask {

@@ -16,7 +16,6 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import java.util.Map;
 import java.util.UUID;
 import lombok.Data;
 

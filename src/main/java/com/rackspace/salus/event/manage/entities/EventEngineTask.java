@@ -55,7 +55,7 @@ public class EventEngineTask {
   TaskParameters taskParameters;
 
   /**
-   * Labels are an indexed and query'able aspect of resources that are used for monitor
+   * Labels are an indexed and query'able aspect of resources that are used for event task
    * matching.
    */
   @ElementCollection(fetch = FetchType.EAGER)
