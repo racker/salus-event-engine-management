@@ -60,7 +60,6 @@ public class TickScriptBuilder {
 
   public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
     return taskTemplate.execute(TaskContext.builder()
-            //how exactly do I want to build this? I could add it to the TaskObject. Or I could just create a function here...
         .labelSelectorExpression(buildLabelSelectorQuery(taskParameters))
         .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
         .measurement(measurement)
@@ -79,10 +78,21 @@ public class TickScriptBuilder {
         builder.append(" AND ");
       }
 
-      builder.append("if(isPresent(\""+LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA,tuple.getKey()) + "\"), \""+ LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA,tuple.getKey()) +"\" == '" + tuple.getValue()+"', FALSE )");
+      builder.append(
+              "if(isPresent(\""+
+                      applyNamespace(tuple.getKey()) +
+                      "\"), \""+ //end of isPresent
+                      applyNamespace(tuple.getKey()) +
+                      "\" == '" +
+                      tuple.getValue()+
+                      "', FALSE )");
       first++;
     }
     return builder.toString();
+  }
+
+  private String applyNamespace(String key) {
+    return LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA, key);
   }
 
   @Data @Builder

@@ -59,6 +59,6 @@ public class EventEngineTask {
    * matching.
    */
   @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name="task_labels", joinColumns = @JoinColumn(name="id"))
+  @CollectionTable(name="event_engine_task_label_selector", joinColumns = @JoinColumn(name="id"))
   Map<String,String> labelSelector;
 }
