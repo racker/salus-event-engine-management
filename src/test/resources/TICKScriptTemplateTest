@@ -1,0 +1,11 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('resourceId')
+  |where(lambda: if(isPresent("monitoring_system.metadata.os"), "monitoring_system.metadata.os" == 'linux', FALSE ))
+  |alert()
+    .stateChangesOnly()
+    .id('tenant:{{index .Tags "system.resourceId"}}:measurement:field')
+    .details('task={{.TaskName}}')
+    .crit(lambda: "field" >= 33)
+    .topic('events')

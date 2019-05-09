@@ -21,9 +21,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.FileCopyUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RunWith(SpringRunner.class)
@@ -34,18 +41,25 @@ public class TickScriptBuilderTest {
   TickScriptBuilder tickScriptBuilder;
 
   @Test
-  public void testBuild() {
-    String expectedString = "stream\n  |from()\n    .measurement('measurement')\n" +
-            "    .groupBy('resourceId')\n  |alert()\n    .stateChangesOnly()\n" +
-            "    .id('tenant:{{index .Tags \"system.resourceId\"}}:measurement:field')\n" +
-            "    .details('task={{.TaskName}}')\n    .crit(lambda: \"field\" >= 33)\n    .topic('events')";
-
-    TaskParameters tp = new TaskParameters().setComparator(">=").setField("field").setThreshold(33);
+  public void testBuild() throws IOException{
+    String expectedString = readContent("/TICKScriptTemplateTest");
+    Map<String, String> labelSelectors = new HashMap();
+    labelSelectors.put("os", "linux");
+    TaskParameters tp = new TaskParameters()
+            .setComparator(">=")
+            .setField("field")
+            .setThreshold(33)
+            .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(script, expectedString);
 
+  }
 
+  private static String readContent(String resource) throws IOException {
+    try (InputStream in = new ClassPathResource(resource).getInputStream()) {
+      return FileCopyUtils.copyToString(new InputStreamReader(in));
+    }
   }
 
 }
