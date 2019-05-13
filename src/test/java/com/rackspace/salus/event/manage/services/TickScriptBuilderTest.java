@@ -42,7 +42,7 @@ public class TickScriptBuilderTest {
 
   @Test
   public void testBuild() throws IOException{
-    String expectedString = readContent("/TICKScriptTemplateTest");
+    String expectedString = readContent("/TICKScriptBuilderTest.tick");
     Map<String, String> labelSelectors = new HashMap();
     labelSelectors.put("os", "linux");
     TaskParameters tp = new TaskParameters()
