@@ -2,9 +2,18 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
-{{#entrySet}}
-  |where(lambda: if(isPresent("{{labelNamespace}}.{{key}}"), "{{labelNamespace}}.{{key}}" == '{{value}}', FALSE))
-{{/entrySet}}
+{{#entrySetIsSet}}
+  |where(lambda:
+  {{#entrySet}}
+    if(isPresent("{{labelNamespace}}.{{key}}"), "{{labelNamespace}}.{{key}}" == '{{value}}', FALSE)
+    {{^-last}}
+      AND
+    {{/-last}}
+    {{#-last}}
+      )
+    {{/-last}}
+  {{/entrySet}}
+{{/entrySetIsSet}}
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')
