@@ -2,7 +2,9 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
-  |where(lambda: {{labelSelectorExpression}})
+{{#entrySet}}
+  |where(lambda: if(isPresent("{{labelNamespace}}.{{key}}"), "{{labelNamespace}}.{{key}}" == '{{value}}', FALSE))
+{{/entrySet}}
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')

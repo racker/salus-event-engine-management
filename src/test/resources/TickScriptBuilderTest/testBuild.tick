@@ -2,7 +2,8 @@ stream
   |from()
     .measurement('measurement')
     .groupBy('resourceId')
-  |where(lambda: if(isPresent("monitoring_system.metadata.os"), "monitoring_system.metadata.os" == 'linux', FALSE ))
+  |where(lambda:
+        if(isPresent("monitoring_system.metadata.os"), "monitoring_system.metadata.os" == 'linux', FALSE ))
   |alert()
     .stateChangesOnly()
     .id('tenant:{{index .Tags "system.resourceId"}}:measurement:field')

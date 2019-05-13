@@ -59,7 +59,8 @@ public class TickScriptBuilder {
 
   public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
     return taskTemplate.execute(TaskContext.builder()
-        .labelSelectorExpression(buildLabelSelectorQuery(taskParameters))
+        .entrySet(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
+        .labelNamespace(MONITORING_SYSTEM_METADATA)
         .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
         .measurement(measurement)
         .details("task={{.TaskName}}")
@@ -67,33 +68,10 @@ public class TickScriptBuilder {
         .build());
   }
 
-  private String buildLabelSelectorQuery(TaskParameters taskParameters) {
-    StringBuilder builder = new StringBuilder();
-    int first = 0;
-
-    Set<Map.Entry<String, String>> labels = taskParameters.getLabelSelector().entrySet();
-    for(Map.Entry<String, String> tuple: labels) {
-      if(first != 0) {
-        builder.append(" AND ");
-      }
-
-      String namespacedKey = LabelNamespaces.applyNamespace(MONITORING_SYSTEM_METADATA, tuple.getKey());
-      builder.append("if(isPresent(\"");
-      builder.append(namespacedKey);
-      builder.append("\"), \""); //end of isPresent\
-      builder.append(namespacedKey);
-      builder.append("\" == '");
-      builder.append(tuple.getValue());
-      builder.append("', FALSE )");
-      first++;
-    }
-    return builder.toString();
-  }
-
-
   @Data @Builder
   public static class TaskContext {
-    String labelSelectorExpression;
+    Set<Map.Entry<String, String>> entrySet;
+    String labelNamespace = MONITORING_SYSTEM_METADATA;
     String measurement;
     String alertId;
     String critExpression;
