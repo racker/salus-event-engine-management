@@ -56,6 +56,36 @@ public class TickScriptBuilderTest {
 
   }
 
+  @Test
+  public void testBuildNoLabels() throws IOException{
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
+    TaskParameters tp = new TaskParameters()
+        .setComparator(">=")
+        .setField("field")
+        .setThreshold(33);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(script, expectedString);
+
+  }
+
+  @Test
+  public void testBuildMultipleLabels() throws IOException{
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleLabels.tick");
+    Map<String, String> labelSelectors = new HashMap();
+    labelSelectors.put("os", "linux");
+    labelSelectors.put("env", "prod");
+    TaskParameters tp = new TaskParameters()
+        .setComparator(">=")
+        .setField("field")
+        .setThreshold(33)
+        .setLabelSelector(labelSelectors);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(script, expectedString);
+
+  }
+
   private static String readContent(String resource) throws IOException {
     try (InputStream in = new ClassPathResource(resource).getInputStream()) {
       return FileCopyUtils.copyToString(new InputStreamReader(in));

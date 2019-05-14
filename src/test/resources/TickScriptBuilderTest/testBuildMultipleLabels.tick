@@ -4,6 +4,8 @@ stream
     .groupBy('resourceId')
   |where(lambda:
     if(isPresent("monitoring_system.metadata.os"), "monitoring_system.metadata.os" == 'linux', FALSE)
+      AND
+    if(isPresent("monitoring_system.metadata.env"), "monitoring_system.metadata.env" == 'prod', FALSE)
       )
   |alert()
     .stateChangesOnly()
