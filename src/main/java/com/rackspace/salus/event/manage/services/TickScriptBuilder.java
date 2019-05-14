@@ -58,13 +58,13 @@ public class TickScriptBuilder {
   }
 
   public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
-    boolean entrySetIsSet = false;
+    boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
-      entrySetIsSet = true;
+      labelsAvailable = true;
     return taskTemplate.execute(TaskContext.builder()
-        .entrySet(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
+        .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
-        .entrySetIsSet(entrySetIsSet)
+        .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
         .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
@@ -73,8 +73,8 @@ public class TickScriptBuilder {
 
   @Data @Builder
   public static class TaskContext {
-    Set<Map.Entry<String, String>> entrySet;
-    boolean entrySetIsSet;
+    Set<Map.Entry<String, String>> labels;
+    boolean labelsAvailable;
     @Default
     String labelNamespace = MONITORING_SYSTEM_METADATA;
     String measurement;
