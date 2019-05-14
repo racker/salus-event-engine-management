@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.model;
 
+import com.rackspace.salus.telemetry.model.ValidLabelKeys;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
@@ -31,5 +32,6 @@ public class TaskParameters {
   @NotEmpty
   String comparator;
 
+  @ValidLabelKeys
   Map<String, String> labelSelector;
 }

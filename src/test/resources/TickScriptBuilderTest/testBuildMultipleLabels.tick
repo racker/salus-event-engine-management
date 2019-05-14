@@ -3,13 +3,13 @@ stream
     .measurement('measurement')
     .groupBy('resourceId')
   |where(lambda:
-    if(isPresent("monitoring_system.metadata.os"), "monitoring_system.metadata.os" == 'linux', FALSE)
+    if(isPresent("resource_metadata.os"), "resource_metadata.os" == 'linux', FALSE)
       AND
-    if(isPresent("monitoring_system.metadata.env"), "monitoring_system.metadata.env" == 'prod', FALSE)
+    if(isPresent("resource_metadata.env"), "resource_metadata.env" == 'prod', FALSE)
       )
   |alert()
     .stateChangesOnly()
-    .id('tenant:{{index .Tags "system.resourceId"}}:measurement:field')
+    .id('tenant:{{index .Tags "system_resourceId"}}:measurement:field')
     .details('task={{.TaskName}}')
     .crit(lambda: "field" >= 33)
     .topic('events')
