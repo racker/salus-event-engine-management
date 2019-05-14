@@ -75,8 +75,6 @@ public class TickScriptBuilder {
   public static class TaskContext {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
-    @Default
-    String labelNamespace = MONITORING_SYSTEM_METADATA;
     String measurement;
     String alertId;
     String critExpression;

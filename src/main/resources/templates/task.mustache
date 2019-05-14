@@ -5,7 +5,7 @@ stream
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}
-    if(isPresent("{{labelNamespace}}.{{key}}"), "{{labelNamespace}}.{{key}}" == '{{value}}', FALSE)
+    if(isPresent("{{key}}"), "{{key}}" == '{{value}}', FALSE)
     {{^-last}}
       AND
     {{/-last}}

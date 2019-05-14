@@ -44,7 +44,7 @@ public class TickScriptBuilderTest {
   public void testBuild() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
     Map<String, String> labelSelectors = new HashMap();
-    labelSelectors.put("os", "linux");
+    labelSelectors.put("resource_metadata_os", "linux");
     TaskParameters tp = new TaskParameters()
             .setComparator(">=")
             .setField("field")
@@ -73,8 +73,8 @@ public class TickScriptBuilderTest {
   public void testBuildMultipleLabels() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleLabels.tick");
     Map<String, String> labelSelectors = new HashMap();
-    labelSelectors.put("os", "linux");
-    labelSelectors.put("env", "prod");
+    labelSelectors.put("resource_metadata_os", "linux");
+    labelSelectors.put("resource_metadata_env", "prod");
     TaskParameters tp = new TaskParameters()
         .setComparator(">=")
         .setField("field")
