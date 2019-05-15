@@ -18,12 +18,11 @@ package com.rackspace.salus.event.manage.entities;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+
+import java.util.Map;
 import java.util.UUID;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import javax.persistence.*;
+
 import lombok.Data;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -54,4 +53,12 @@ public class EventEngineTask {
   @Type(type = "json")
   @Column(nullable = false, columnDefinition = "json")
   TaskParameters taskParameters;
+
+  /**
+   * Labels are an indexed and query'able aspect of resources that are used for event task
+   * matching.
+   */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name="event_engine_task_label_selector", joinColumns = @JoinColumn(name="id"))
+  Map<String,String> labelSelector;
 }

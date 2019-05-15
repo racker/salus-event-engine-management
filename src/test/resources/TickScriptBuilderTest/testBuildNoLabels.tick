@@ -1,0 +1,10 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('resourceId')
+  |alert()
+    .stateChangesOnly()
+    .id('tenant:{{index .Tags "system_resourceId"}}:measurement:field')
+    .details('task={{.TaskName}}')
+    .crit(lambda: "field" >= 33)
+    .topic('events')

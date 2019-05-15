@@ -17,12 +17,16 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.telemetry.model.LabelNamespaces;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -30,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+
+import static com.rackspace.salus.telemetry.model.LabelNamespaces.MONITORING_SYSTEM_METADATA;
 
 @Component
 public class TickScriptBuilder {
@@ -52,8 +58,13 @@ public class TickScriptBuilder {
   }
 
   public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
+    boolean labelsAvailable = false;
+    if(taskParameters.getLabelSelector() != null)
+      labelsAvailable = true;
     return taskTemplate.execute(TaskContext.builder()
+        .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
+        .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
         .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
@@ -62,6 +73,8 @@ public class TickScriptBuilder {
 
   @Data @Builder
   public static class TaskContext {
+    Set<Map.Entry<String, String>> labels;
+    boolean labelsAvailable;
     String measurement;
     String alertId;
     String critExpression;
