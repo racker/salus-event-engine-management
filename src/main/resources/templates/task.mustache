@@ -15,6 +15,13 @@ stream
   {{/labels}}
 {{/labelsAvailable}}
   |stateCount(lambda: {{critExpression}})
+{{#warnExpression}}
+  |stateCount(lambda: {{warnExpression}})
+    .as('warn_count')
+{{/warnExpression}}
+{{#infoExpression}}
+  |stateCount(lambda: {{infoExpression}}).as("info_count")
+{{/infoExpression}}
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')

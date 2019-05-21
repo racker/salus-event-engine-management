@@ -32,7 +32,8 @@ public class TaskParameters {
   @ValidLabelKeys
   Map<String, String> labelSelector;
 
-  private class LevelExpression {
+  @Data
+  public class LevelExpression {
     Expression expression;
     Integer consecutiveCount;
   }

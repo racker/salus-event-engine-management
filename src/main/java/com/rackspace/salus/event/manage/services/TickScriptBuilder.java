@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.rackspace.salus.telemetry.model.LabelNamespaces;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
@@ -42,6 +43,7 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
   private final TaskIdGenerator taskIdGenerator;
+  private LevelExpression levelExpression;
 
   @Autowired
   public TickScriptBuilder(TaskIdGenerator taskIdGenerator,
@@ -61,22 +63,38 @@ public class TickScriptBuilder {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
       labelsAvailable = true;
+    levelExpression = taskParameters.getInfo();
     return taskTemplate.execute(TaskContext.builder()
         .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
+        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getCritical().getExpression().getField()))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
+        .critExpression(String.format("\"%s\" %s %s",
+            taskParameters.getCritical().getExpression().getField(),
+            taskParameters.getCritical().getExpression().getComparator(),
+            taskParameters.getCritical().getExpression().getThreshold()))
+        .infoExpression(taskParameters.getInfo() != null ?
+            String.format("\"%s\" %s %s",
+            taskParameters.getInfo().getExpression().getField(),
+            taskParameters.getInfo().getExpression().getComparator(),
+            taskParameters.getInfo().getExpression().getThreshold()) :
+            null)
+        .warnExpression(taskParameters.getWarning() != null ?
+            String.format("\"%s\" %s %s",
+                taskParameters.getWarning().getExpression().getField(),
+                taskParameters.getWarning().getExpression().getComparator(),
+                taskParameters.getWarning().getExpression().getThreshold()) :
+            null)
         .infoCount(
-            taskParameters.getConsecutiveInfo() != null ?
-                String.format("\"state_count\" >= %d",taskParameters.getConsecutiveInfo())
+            taskParameters.getInfo() != null ?
+                String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
                 : null)
         .warnCount(
-          taskParameters.getConsecutiveWarning() != null ?
-            String.format("\"state_count\" >= %d",taskParameters.getConsecutiveWarning())
+          taskParameters.getWarning() != null ?
+            String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
             : null)
-        .critCount(String.format("\"state_count\" >= %d", taskParameters.getConsecutiveCritical()))
+        .critCount(String.format("\"state_count\" >= %d", taskParameters.getCritical().getConsecutiveCount()))
         .build());
   }
 
@@ -90,6 +108,8 @@ public class TickScriptBuilder {
     String warnCount;
     String infoCount;
     String critExpression;
+    String warnExpression;
+    String infoExpression;
     @Default
     String details = "";
     @Default
