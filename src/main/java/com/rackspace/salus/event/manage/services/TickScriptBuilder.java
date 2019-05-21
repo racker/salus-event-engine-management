@@ -68,6 +68,15 @@ public class TickScriptBuilder {
         .measurement(measurement)
         .details("task={{.TaskName}}")
         .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
+        .infoCount(
+            taskParameters.getConsecutiveInfo() != null ?
+                String.format("\"state_count\" >= %d",taskParameters.getConsecutiveInfo())
+                : null)
+        .warnCount(
+          taskParameters.getConsecutiveWarning() != null ?
+            String.format("\"state_count\" >= %d",taskParameters.getConsecutiveWarning())
+            : null)
+        .critCount(String.format("\"state_count\" >= %d", taskParameters.getConsecutiveCritical()))
         .build());
   }
 
@@ -77,6 +86,9 @@ public class TickScriptBuilder {
     boolean labelsAvailable;
     String measurement;
     String alertId;
+    String critCount;
+    String warnCount;
+    String infoCount;
     String critExpression;
     @Default
     String details = "";

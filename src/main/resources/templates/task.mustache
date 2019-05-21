@@ -14,9 +14,16 @@ stream
     {{/-last}}
   {{/labels}}
 {{/labelsAvailable}}
+  |stateCount(lambda: {{critExpression}})
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')
     .details('{{details}}')
-    .crit(lambda: {{critExpression}})
+{{#infoCount}}
+    .info(lambda: {{infoCount}})
+{{/infoCount}}
+{{#warnCount}}
+    .warn(lambda: {{warnCount}})
+{{/warnCount}}
+    .crit(lambda: {{critCount}})
     .topic('events')

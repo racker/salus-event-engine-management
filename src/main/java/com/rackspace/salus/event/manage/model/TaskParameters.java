@@ -32,6 +32,10 @@ public class TaskParameters {
   @NotEmpty
   String comparator;
 
+  Integer consecutiveInfo;
+  Integer consecutiveWarning;
+  Integer consecutiveCritical;
+
   @ValidLabelKeys
   Map<String, String> labelSelector;
 }
