@@ -25,15 +25,15 @@ import java.util.Map;
 
 @Data
 public class TaskParameters {
-  levelExpression consecutiveInfo;
-  levelExpression consecutiveWarning;
-  levelExpression consecutiveCritical;
+  LevelExpression info;
+  LevelExpression warning;
+  LevelExpression critical;
 
   @ValidLabelKeys
   Map<String, String> labelSelector;
 
-  private class levelExpression {
-    Expression baseExpression;
+  private class LevelExpression {
+    Expression expression;
     Integer consecutiveCount;
   }
 }
