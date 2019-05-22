@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.rackspace.salus.telemetry.model.LabelNamespaces;
@@ -70,21 +71,14 @@ public class TickScriptBuilder {
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" %s %s",
-            taskParameters.getCritical().getExpression().getField(),
-            taskParameters.getCritical().getExpression().getComparator(),
-            taskParameters.getCritical().getExpression().getThreshold()))
+        .critExpression(taskParameters.getCritical() != null ?
+            buildTICKExpression(taskParameters.getCritical().getExpression()) :
+            null)
         .infoExpression(taskParameters.getInfo() != null ?
-            String.format("\"%s\" %s %s",
-            taskParameters.getInfo().getExpression().getField(),
-            taskParameters.getInfo().getExpression().getComparator(),
-            taskParameters.getInfo().getExpression().getThreshold()) :
+            buildTICKExpression(taskParameters.getInfo().getExpression()) :
             null)
         .warnExpression(taskParameters.getWarning() != null ?
-            String.format("\"%s\" %s %s",
-                taskParameters.getWarning().getExpression().getField(),
-                taskParameters.getWarning().getExpression().getComparator(),
-                taskParameters.getWarning().getExpression().getThreshold()) :
+            buildTICKExpression(taskParameters.getWarning().getExpression()) :
             null)
         .infoCount(
             taskParameters.getInfo() != null ?
@@ -96,6 +90,10 @@ public class TickScriptBuilder {
             : null)
         .critCount(String.format("\"state_count\" >= %d", taskParameters.getCritical().getConsecutiveCount()))
         .build());
+  }
+
+  public String buildTICKExpression(Expression expression) {
+    return String.format("\"%s\" %s %s", expression.getField(),  expression.getComparator(), expression.getThreshold());
   }
 
   @Data @Builder

@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.model;
 
+import com.rackspace.salus.event.manage.model.validator.TaskParametersValidator;
 import com.rackspace.salus.telemetry.model.ValidLabelKeys;
 import lombok.Data;
 
@@ -24,6 +25,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
+@TaskParametersValidator.AtLeastOneOf()
 public class TaskParameters {
   LevelExpression info;
   LevelExpression warning;
