@@ -41,7 +41,7 @@ public class TaskParametersValidator implements ConstraintValidator<TaskParamete
   @Constraint(validatedBy = TaskParametersValidator.class) // validator
   @Documented
   public @interface AtLeastOneOf {
-    String message() default "At least one of the Expressions must be set"; // default error message
+    String message() default "At least one of the level expressions must be set"; // default error message
 
     Class<?>[] groups() default {}; // required
 

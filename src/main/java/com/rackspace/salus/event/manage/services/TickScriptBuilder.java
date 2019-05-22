@@ -71,15 +71,9 @@ public class TickScriptBuilder {
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(taskParameters.getCritical() != null ?
-            buildTICKExpression(taskParameters.getCritical().getExpression()) :
-            null)
-        .infoExpression(taskParameters.getInfo() != null ?
-            buildTICKExpression(taskParameters.getInfo().getExpression()) :
-            null)
-        .warnExpression(taskParameters.getWarning() != null ?
-            buildTICKExpression(taskParameters.getWarning().getExpression()) :
-            null)
+        .critExpression(buildTICKExpression(taskParameters.getCritical()))
+        .infoExpression(buildTICKExpression(taskParameters.getInfo()))
+        .warnExpression(buildTICKExpression(taskParameters.getWarning()))
         .infoCount(
             taskParameters.getInfo() != null ?
                 String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
@@ -88,12 +82,15 @@ public class TickScriptBuilder {
           taskParameters.getWarning() != null ?
             String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
             : null)
-        .critCount(String.format("\"state_count\" >= %d", taskParameters.getCritical().getConsecutiveCount()))
+        .critCount(String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount()))
         .build());
   }
 
-  public String buildTICKExpression(Expression expression) {
-    return String.format("\"%s\" %s %s", expression.getField(),  expression.getComparator(), expression.getThreshold());
+  public String buildTICKExpression(LevelExpression expression) {
+    return expression != null ? String.format("\"%s\" %s %s", expression.getExpression().getField(),
+        expression.getExpression().getComparator(),
+        expression.getExpression().getThreshold()) :
+        null;
   }
 
   @Data @Builder
