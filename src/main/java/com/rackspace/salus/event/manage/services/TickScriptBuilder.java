@@ -60,14 +60,16 @@ public class TickScriptBuilder {
     this.taskIdGenerator = taskIdGenerator;
   }
 
-  public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
+  public String build(String tenantId, String measurement, TaskParameters taskParameters) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
       labelsAvailable = true;
-    levelExpression = taskParameters.getInfo();
     return taskTemplate.execute(TaskContext.builder()
         .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getCritical().getExpression().getField()))
+        .alertId(String.join(":",
+            "{{ .TaskName }}",
+            "{{ .Group }}"
+            ))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")

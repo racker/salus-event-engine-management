@@ -44,12 +44,5 @@ public class TaskIdGenerator {
     return String.format("%s-*", tenantId);
   }
 
-  public String generateAlertId(String tenantId, String measurement, String field) {
-    return String.join(":",
-        tenantId,
-        String.format("{{index .Tags \"%s\"}}", Tags.RESOURCE_ID),
-        measurement,
-        field
-    );
-  }
+
 }

@@ -13,6 +13,11 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
+/**
+ * This validator makes sure that at least one parameter level is defined.
+ * Tasks can't accomplish anything without any parameters defined because they
+ * will have nothing to alert on.
+ */
 public class TaskParametersValidator implements ConstraintValidator<TaskParametersValidator.AtLeastOneOf, TaskParameters> {
 
   @Override
