@@ -16,7 +16,9 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,29 +45,97 @@ public class TickScriptBuilderTest {
   @Test
   public void testBuild() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
+
+    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    critExpression.setConsecutiveCount(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
     Map<String, String> labelSelectors = new HashMap();
     labelSelectors.put("resource_metadata_os", "linux");
     TaskParameters tp = new TaskParameters()
-            .setComparator(">=")
-            .setField("field")
-            .setThreshold(33)
-            .setLabelSelector(labelSelectors);
+        .setCritical(critExpression)
+        .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
-    Assert.assertEquals(script, expectedString);
+    Assert.assertEquals(expectedString, script);
+
+  }
+
+  @Test
+  public void testBuildOnlyInfo() throws IOException{
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
+
+    LevelExpression infoExpression = new TaskParameters().new LevelExpression();
+    infoExpression.setConsecutiveCount(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
+    Map<String, String> labelSelectors = new HashMap();
+    labelSelectors.put("resource_metadata_os", "linux");
+    TaskParameters tp = new TaskParameters()
+        .setInfo(infoExpression)
+        .setLabelSelector(labelSelectors);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+
+  }
+
+  @Test
+  public void testBuildMultipleExpressions() throws IOException{
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
+
+    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    critExpression.setConsecutiveCount(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
+
+    LevelExpression warnExpression = new TaskParameters().new LevelExpression();
+    warnExpression.setConsecutiveCount(3)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
+
+    LevelExpression infoExpression = new TaskParameters().new LevelExpression();
+    infoExpression.setConsecutiveCount(1)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(20));
+    Map<String, String> labelSelectors = new HashMap();
+    labelSelectors.put("resource_metadata_os", "linux");
+    TaskParameters tp = new TaskParameters()
+        .setCritical(critExpression)
+        .setWarning(warnExpression)
+        .setInfo(infoExpression)
+        .setLabelSelector(labelSelectors);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
 
   }
 
   @Test
   public void testBuildNoLabels() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
+
+    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    critExpression.setConsecutiveCount(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
     TaskParameters tp = new TaskParameters()
-        .setComparator(">=")
-        .setField("field")
-        .setThreshold(33);
+        .setCritical(critExpression);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
-    Assert.assertEquals(script, expectedString);
+    Assert.assertEquals(expectedString, script);
 
   }
 
@@ -75,14 +145,19 @@ public class TickScriptBuilderTest {
     Map<String, String> labelSelectors = new HashMap();
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
+
+    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    critExpression.setConsecutiveCount(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
     TaskParameters tp = new TaskParameters()
-        .setComparator(">=")
-        .setField("field")
-        .setThreshold(33)
+        .setCritical(critExpression)
         .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
-    Assert.assertEquals(script, expectedString);
+    Assert.assertEquals(expectedString, script);
 
   }
 

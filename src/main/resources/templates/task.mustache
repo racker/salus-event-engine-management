@@ -15,15 +15,18 @@ stream
   {{/labels}}
 {{/labelsAvailable}}
 {{#critExpression}}
-  |stateCount(lambda: {{critExpression}})
+  |stateDuration(lambda: {{critExpression}})
+    .unit(1m)
     .as('crit_count')
 {{/critExpression}}
 {{#warnExpression}}
-  |stateCount(lambda: {{warnExpression}})
+  |stateDuration(lambda: {{warnExpression}})
+    .unit(1m)
     .as('warn_count')
 {{/warnExpression}}
 {{#infoExpression}}
-  |stateCount(lambda: {{infoExpression}})
+  |stateDuration(lambda: {{infoExpression}})
+    .unit(1m)
     .as('info_count')
 {{/infoExpression}}
   |alert()
@@ -39,4 +42,8 @@ stream
 {{#critCount}}
     .crit(lambda: {{critCount}})
 {{/critCount}}
+{{#flapping}}
+    .flapping(.25, .5)
+{{/flapping}}
+    .history(21)
     .topic('events')

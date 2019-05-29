@@ -31,6 +31,8 @@ public class TaskParameters {
   LevelExpression warning;
   LevelExpression critical;
 
+  boolean flappingDetection;
+
   @ValidLabelKeys
   Map<String, String> labelSelector;
 

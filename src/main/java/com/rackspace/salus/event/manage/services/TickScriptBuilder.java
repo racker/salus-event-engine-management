@@ -16,10 +16,8 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
-import com.rackspace.salus.telemetry.model.LabelNamespaces;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -37,14 +35,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import static com.rackspace.salus.telemetry.model.LabelNamespaces.MONITORING_SYSTEM_METADATA;
 
 @Component
 public class TickScriptBuilder {
 
   private final Template taskTemplate;
-  private final TaskIdGenerator taskIdGenerator;
-  private LevelExpression levelExpression;
 
   @Autowired
   public TickScriptBuilder(TaskIdGenerator taskIdGenerator,
@@ -56,8 +51,6 @@ public class TickScriptBuilder {
         taskTemplateResource.getInputStream())) {
       taskTemplate = mustacheCompiler.compile(taskTemplateReader);
     }
-
-    this.taskIdGenerator = taskIdGenerator;
   }
 
   public String build(String tenantId, String measurement, TaskParameters taskParameters) {
@@ -77,17 +70,18 @@ public class TickScriptBuilder {
         .infoExpression(buildTICKExpression(taskParameters.getInfo()))
         .warnExpression(buildTICKExpression(taskParameters.getWarning()))
         .infoCount(
-            taskParameters.getInfo() != null ?
-                String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
-                : null)
+          taskParameters.getInfo() != null ?
+            String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
+            : null)
         .warnCount(
           taskParameters.getWarning() != null ?
             String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
             : null)
         .critCount(
-            taskParameters.getCritical() != null ?
-                String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount())
-                :null)
+          taskParameters.getCritical() != null ?
+            String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount())
+            : null)
+        .flappingDetection(taskParameters.isFlappingDetection())
         .build());
   }
 
@@ -102,6 +96,7 @@ public class TickScriptBuilder {
   public static class TaskContext {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
+    boolean flappingDetection;
     String measurement;
     String alertId;
     String critCount;
