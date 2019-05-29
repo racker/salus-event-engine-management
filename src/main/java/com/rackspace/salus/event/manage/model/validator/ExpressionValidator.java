@@ -2,11 +2,9 @@ package com.rackspace.salus.event.manage.model.validator;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.rackspace.salus.event.manage.model.Expression;
-import com.rackspace.salus.event.manage.model.validator.TaskParametersValidator.AtLeastOneOf;
+import com.rackspace.salus.event.manage.model.validator.ExpressionValidator.ComparatorValidation;
 import com.rackspace.salus.event.manage.types.Comparator;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -19,11 +17,11 @@ import javax.validation.Payload;
 /**
  * Validates on object creation whether the validator is one of the four acceptable options that we allow
  */
-public class ExpressionValidator implements ConstraintValidator<AtLeastOneOf, Expression> {
+public class ExpressionValidator implements ConstraintValidator<ComparatorValidation, String> {
 
   @Override
-  public boolean isValid(Expression expression, ConstraintValidatorContext context) {
-    return Comparator.valid(expression.getComparator());
+  public boolean isValid(String comparator, ConstraintValidatorContext context) {
+    return Comparator.valid(comparator);
   }
 
   @Target({FIELD, ANNOTATION_TYPE}) // class level constraint
