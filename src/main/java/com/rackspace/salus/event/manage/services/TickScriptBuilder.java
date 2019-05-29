@@ -84,7 +84,10 @@ public class TickScriptBuilder {
           taskParameters.getWarning() != null ?
             String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
             : null)
-        .critCount(String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount()))
+        .critCount(
+            taskParameters.getCritical() != null ?
+                String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount())
+                :null)
         .build());
   }
 

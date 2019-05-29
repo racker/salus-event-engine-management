@@ -1,6 +1,7 @@
 package com.rackspace.salus.event.manage.model.validator;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -25,7 +26,7 @@ public class ExpressionValidator implements ConstraintValidator<AtLeastOneOf, Ex
     return Comparator.valid(expression.getComparator());
   }
 
-  @Target({TYPE, ANNOTATION_TYPE}) // class level constraint
+  @Target({FIELD, ANNOTATION_TYPE}) // class level constraint
   @Retention(RUNTIME)
   @Constraint(validatedBy = ExpressionValidator.class) // validator
   @Documented

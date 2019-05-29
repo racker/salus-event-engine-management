@@ -7,13 +7,14 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@ExpressionValidator.ComparatorValidation()
+
 public class Expression {
   @NotEmpty
   String field;
   @NotNull
   Number threshold;
   @NotEmpty
+  @ExpressionValidator.ComparatorValidation()
   String comparator;
 
 }
