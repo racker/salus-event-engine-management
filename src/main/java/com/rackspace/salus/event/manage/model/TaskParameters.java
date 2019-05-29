@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.model;
 
+import com.rackspace.salus.event.manage.model.validator.TaskParametersValidator;
 import com.rackspace.salus.telemetry.model.ValidLabelKeys;
 import lombok.Data;
 
@@ -24,18 +25,18 @@ import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
+@TaskParametersValidator.AtLeastOneOf()
 public class TaskParameters {
-  @NotEmpty
-  String field;
-  @NotNull
-  Number threshold;
-  @NotEmpty
-  String comparator;
-
-  Integer consecutiveInfo;
-  Integer consecutiveWarning;
-  Integer consecutiveCritical;
+  LevelExpression info;
+  LevelExpression warning;
+  LevelExpression critical;
 
   @ValidLabelKeys
   Map<String, String> labelSelector;
+
+  @Data
+  public class LevelExpression {
+    Expression expression;
+    Integer consecutiveCount;
+  }
 }

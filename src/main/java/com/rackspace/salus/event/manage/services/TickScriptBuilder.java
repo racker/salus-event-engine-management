@@ -16,7 +16,9 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.rackspace.salus.telemetry.model.LabelNamespaces;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
@@ -42,6 +44,7 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
   private final TaskIdGenerator taskIdGenerator;
+  private LevelExpression levelExpression;
 
   @Autowired
   public TickScriptBuilder(TaskIdGenerator taskIdGenerator,
@@ -57,27 +60,42 @@ public class TickScriptBuilder {
     this.taskIdGenerator = taskIdGenerator;
   }
 
-  public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
+  public String build(String tenantId, String measurement, TaskParameters taskParameters) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
       labelsAvailable = true;
     return taskTemplate.execute(TaskContext.builder()
         .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
+        .alertId(String.join(":",
+            "{{ .TaskName }}",
+            "{{ .Group }}"
+            ))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
+        .critExpression(buildTICKExpression(taskParameters.getCritical()))
+        .infoExpression(buildTICKExpression(taskParameters.getInfo()))
+        .warnExpression(buildTICKExpression(taskParameters.getWarning()))
         .infoCount(
-            taskParameters.getConsecutiveInfo() != null ?
-                String.format("\"state_count\" >= %d",taskParameters.getConsecutiveInfo())
+            taskParameters.getInfo() != null ?
+                String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
                 : null)
         .warnCount(
-          taskParameters.getConsecutiveWarning() != null ?
-            String.format("\"state_count\" >= %d",taskParameters.getConsecutiveWarning())
+          taskParameters.getWarning() != null ?
+            String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
             : null)
-        .critCount(String.format("\"state_count\" >= %d", taskParameters.getConsecutiveCritical()))
+        .critCount(
+            taskParameters.getCritical() != null ?
+                String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount())
+                :null)
         .build());
+  }
+
+  public String buildTICKExpression(LevelExpression expression) {
+    return expression != null ? String.format("\"%s\" %s %s", expression.getExpression().getField(),
+        expression.getExpression().getComparator(),
+        expression.getExpression().getThreshold()) :
+        null;
   }
 
   @Data @Builder
@@ -90,6 +108,8 @@ public class TickScriptBuilder {
     String warnCount;
     String infoCount;
     String critExpression;
+    String warnExpression;
+    String infoExpression;
     @Default
     String details = "";
     @Default
