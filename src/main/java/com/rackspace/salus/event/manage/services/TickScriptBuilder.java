@@ -17,7 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.manage.model.TaskParameters;
-import com.rackspace.salus.telemetry.model.LabelNamespaces;
+import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -35,13 +35,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import static com.rackspace.salus.telemetry.model.LabelNamespaces.MONITORING_SYSTEM_METADATA;
 
 @Component
 public class TickScriptBuilder {
 
   private final Template taskTemplate;
-  private final TaskIdGenerator taskIdGenerator;
 
   @Autowired
   public TickScriptBuilder(TaskIdGenerator taskIdGenerator,
@@ -53,31 +51,69 @@ public class TickScriptBuilder {
         taskTemplateResource.getInputStream())) {
       taskTemplate = mustacheCompiler.compile(taskTemplateReader);
     }
-
-    this.taskIdGenerator = taskIdGenerator;
   }
 
-  public String build(String tenantId, String measurement,  TaskParameters taskParameters) {
+  public String build(String tenantId, String measurement, TaskParameters taskParameters) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
       labelsAvailable = true;
     return taskTemplate.execute(TaskContext.builder()
         .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
-        .alertId(taskIdGenerator.generateAlertId(tenantId, measurement, taskParameters.getField()))
+        .alertId(String.join(":",
+            "{{ .TaskName }}",
+            "{{ .Group }}"
+            ))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(String.format("\"%s\" %s %s", taskParameters.getField(), taskParameters.getComparator(), taskParameters.getThreshold()))
+        .critExpression(buildTICKExpression(taskParameters.getCritical()))
+        .infoExpression(buildTICKExpression(taskParameters.getInfo()))
+        .warnExpression(buildTICKExpression(taskParameters.getWarning()))
+        .infoCount(
+          buildTICKExpression(taskParameters.getInfo(), "\"info_count\" >= %d"))
+        .warnCount(
+          buildTICKExpression(taskParameters.getWarning(), "\"warn_count\" >= %d"))
+        .critCount(
+          buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
+        .flappingDetection(taskParameters.isFlappingDetection())
         .build());
+  }
+
+  public String buildTICKExpression(LevelExpression expression) {
+    return expression != null ? String.format("\"%s\" %s %s", expression.getExpression().getField(),
+        expression.getExpression().getComparator(),
+        expression.getExpression().getThreshold()) :
+        null;
+  }
+
+  public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
+    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getConsecutiveCount()) :
+        null;
   }
 
   @Data @Builder
   public static class TaskContext {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
+    boolean flappingDetection;
     String measurement;
     String alertId;
+    String critCount;
+    String warnCount;
+    String infoCount;
     String critExpression;
+    String warnExpression;
+    String infoExpression;
+    @Default
+    Integer windowLength = null;
+    @Default
+    String windowField = null;
+    @Default
+    float flappingLower = .25f;
+    @Default
+    float flappingUpper = .5f;
+    @Default
+    int history = 21;
     @Default
     String details = "";
     @Default

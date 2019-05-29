@@ -2,6 +2,17 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
+{{#windowLength}}
+  |window()
+    .period({{windowLength}}m)
+    .every({{windowLength}}m)
+  |max({{windowField}})
+    .as('max_{{windowField}}')
+  |min({{windowField}})
+    .as('min_{{windowField}}')
+  |mean({{windowField}})
+    .as('avg_{{windowField}}')
+{{/windowLength}}
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}
@@ -14,9 +25,36 @@ stream
     {{/-last}}
   {{/labels}}
 {{/labelsAvailable}}
+{{#critExpression}}
+  |stateDuration(lambda: {{critExpression}})
+    .unit(1m)
+    .as('crit_count')
+{{/critExpression}}
+{{#warnExpression}}
+  |stateDuration(lambda: {{warnExpression}})
+    .unit(1m)
+    .as('warn_count')
+{{/warnExpression}}
+{{#infoExpression}}
+  |stateDuration(lambda: {{infoExpression}})
+    .unit(1m)
+    .as('info_count')
+{{/infoExpression}}
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')
     .details('{{details}}')
-    .crit(lambda: {{critExpression}})
+{{#infoCount}}
+    .info(lambda: {{infoCount}})
+{{/infoCount}}
+{{#warnCount}}
+    .warn(lambda: {{warnCount}})
+{{/warnCount}}
+{{#critCount}}
+    .crit(lambda: {{critCount}})
+{{/critCount}}
+{{#flapping}}
+    .flapping({{flappingLower}}, {{flappingUpper}})
+{{/flapping}}
+    .history({{history}})
     .topic('events')
