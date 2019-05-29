@@ -2,17 +2,17 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
-{{#windowing}}
+{{#windowLength}}
   |window()
-    .period({{windowing}})
-    .every({{windowing}})
-  |max({{field}})
-    .as('max_{{field}}')
-  |min({{field}})
-    .as('min_{{field}}')
-  |mean({{field}})
-    .as('avg_{{field}}')
-{{/windowing}}
+    .period({{windowLength}}m)
+    .every({{windowLength}}m)
+  |max({{windowField}})
+    .as('max_{{windowField}}')
+  |min({{windowField}})
+    .as('min_{{windowField}}')
+  |mean({{windowField}})
+    .as('avg_{{windowField}}')
+{{/windowLength}}
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}
@@ -56,5 +56,5 @@ stream
 {{#flapping}}
     .flapping({{flappingLower}}, {{flappingUpper}})
 {{/flapping}}
-    .history(21)
+    .history({{history}})
     .topic('events')

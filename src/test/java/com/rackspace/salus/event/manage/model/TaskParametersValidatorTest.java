@@ -24,16 +24,14 @@ public class TaskParametersValidatorTest {
 
   @Test
   public void testValidation_normal_critical() {
-
     final TaskParameters resource = new TaskParameters()
-        .setCritical(new TaskParameters().new LevelExpression()
+        .setCritical(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)));
     final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
-
     assertThat(results, equalTo(Collections.emptySet()));
   }
 
@@ -41,7 +39,7 @@ public class TaskParametersValidatorTest {
   public void testValidation_normal_warning() {
 
     final TaskParameters resource = new TaskParameters()
-        .setWarning(new TaskParameters().new LevelExpression()
+        .setWarning(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
@@ -56,7 +54,7 @@ public class TaskParametersValidatorTest {
   public void testValidation_normal_info() {
 
     final TaskParameters resource = new TaskParameters()
-        .setInfo(new TaskParameters().new LevelExpression()
+        .setInfo(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
@@ -71,19 +69,19 @@ public class TaskParametersValidatorTest {
   public void testValidation_normal_multiple() {
 
     final TaskParameters resource = new TaskParameters()
-        .setInfo(new TaskParameters().new LevelExpression()
+        .setInfo(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)))
-        .setWarning(new TaskParameters().new LevelExpression()
+        .setWarning(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)))
-        .setCritical(new TaskParameters().new LevelExpression()
+        .setCritical(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")

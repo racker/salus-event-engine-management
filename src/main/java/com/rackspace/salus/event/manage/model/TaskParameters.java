@@ -31,13 +31,16 @@ public class TaskParameters {
   LevelExpression warning;
   LevelExpression critical;
 
+  int windowLength;
+  String windowField;
+
   boolean flappingDetection;
 
   @ValidLabelKeys
   Map<String, String> labelSelector;
 
   @Data
-  public class LevelExpression {
+  public static class LevelExpression {
     Expression expression;
     Integer consecutiveCount;
   }

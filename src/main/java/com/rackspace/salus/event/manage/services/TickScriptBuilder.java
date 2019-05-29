@@ -104,10 +104,14 @@ public class TickScriptBuilder {
     String critExpression;
     String warnExpression;
     String infoExpression;
+    int windowLength;
+    String windowField;
     @Default
-    float flappingLower = (float).25;
+    float flappingLower = .25f;
     @Default
-    float flappingUpper = (float).5;
+    float flappingUpper = .5f;
+    @Default
+    int history = 21;
     @Default
     String details = "";
     @Default

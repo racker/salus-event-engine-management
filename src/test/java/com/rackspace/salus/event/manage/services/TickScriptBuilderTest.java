@@ -46,7 +46,7 @@ public class TickScriptBuilderTest {
   public void testBuild() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
 
-    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    LevelExpression critExpression = new LevelExpression();
     critExpression.setConsecutiveCount(5)
         .setExpression(new Expression()
             .setComparator(">")
@@ -67,7 +67,7 @@ public class TickScriptBuilderTest {
   public void testBuildOnlyInfo() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
 
-    LevelExpression infoExpression = new TaskParameters().new LevelExpression();
+    LevelExpression infoExpression = new LevelExpression();
     infoExpression.setConsecutiveCount(5)
         .setExpression(new Expression()
             .setComparator(">")
@@ -88,21 +88,21 @@ public class TickScriptBuilderTest {
   public void testBuildMultipleExpressions() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
 
-    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    LevelExpression critExpression = new LevelExpression();
     critExpression.setConsecutiveCount(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
 
-    LevelExpression warnExpression = new TaskParameters().new LevelExpression();
+    LevelExpression warnExpression = new LevelExpression();
     warnExpression.setConsecutiveCount(3)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
 
-    LevelExpression infoExpression = new TaskParameters().new LevelExpression();
+    LevelExpression infoExpression = new LevelExpression();
     infoExpression.setConsecutiveCount(1)
         .setExpression(new Expression()
             .setComparator(">")
@@ -125,7 +125,7 @@ public class TickScriptBuilderTest {
   public void testBuildNoLabels() throws IOException{
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
-    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    LevelExpression critExpression = new LevelExpression();
     critExpression.setConsecutiveCount(5)
         .setExpression(new Expression()
             .setComparator(">")
@@ -146,7 +146,7 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
 
-    LevelExpression critExpression = new TaskParameters().new LevelExpression();
+    LevelExpression critExpression = new LevelExpression();
     critExpression.setConsecutiveCount(5)
         .setExpression(new Expression()
             .setComparator(">")
