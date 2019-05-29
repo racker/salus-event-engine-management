@@ -70,17 +70,11 @@ public class TickScriptBuilder {
         .infoExpression(buildTICKExpression(taskParameters.getInfo()))
         .warnExpression(buildTICKExpression(taskParameters.getWarning()))
         .infoCount(
-          taskParameters.getInfo() != null ?
-            String.format("\"info_count\" >= %d", taskParameters.getInfo().getConsecutiveCount())
-            : null)
+          buildTICKExpression(taskParameters.getInfo(), "\"info_count\" >= %d"))
         .warnCount(
-          taskParameters.getWarning() != null ?
-            String.format("\"warn_count\" >= %d",taskParameters.getWarning().getConsecutiveCount())
-            : null)
+          buildTICKExpression(taskParameters.getWarning(), "\"warn_count\" >= %d"))
         .critCount(
-          taskParameters.getCritical() != null ?
-            String.format("\"crit_count\" >= %d", taskParameters.getCritical().getConsecutiveCount())
-            : null)
+          buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
         .flappingDetection(taskParameters.isFlappingDetection())
         .build());
   }
@@ -89,6 +83,11 @@ public class TickScriptBuilder {
     return expression != null ? String.format("\"%s\" %s %s", expression.getExpression().getField(),
         expression.getExpression().getComparator(),
         expression.getExpression().getThreshold()) :
+        null;
+  }
+
+  public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
+    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getConsecutiveCount()) :
         null;
   }
 
@@ -105,6 +104,10 @@ public class TickScriptBuilder {
     String critExpression;
     String warnExpression;
     String infoExpression;
+    @Default
+    float flappingLower = (float).25;
+    @Default
+    float flappingUpper = (float).5;
     @Default
     String details = "";
     @Default

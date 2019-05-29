@@ -2,6 +2,17 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
+{{#windowing}}
+  |window()
+    .period({{windowing}})
+    .every({{windowing}})
+  |max({{field}})
+    .as('max_{{field}}')
+  |min({{field}})
+    .as('min_{{field}}')
+  |mean({{field}})
+    .as('avg_{{field}}')
+{{/windowing}}
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}
@@ -43,7 +54,7 @@ stream
     .crit(lambda: {{critCount}})
 {{/critCount}}
 {{#flapping}}
-    .flapping(.25, .5)
+    .flapping({{flappingLower}}, {{flappingUpper}})
 {{/flapping}}
     .history(21)
     .topic('events')
