@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.common.Tags;
+import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.samskivert.mustache.Escapers;
@@ -25,8 +26,12 @@ import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -76,6 +81,8 @@ public class TickScriptBuilder {
         .critCount(
           buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
         .flappingDetection(taskParameters.isFlappingDetection())
+        .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
+        .joinedAs(joinAs(taskParameters.getEvalExpressions()))
         .build());
   }
 
@@ -91,7 +98,54 @@ public class TickScriptBuilder {
         null;
   }
 
-  @Data @Builder
+  private Boolean isValidRealNumber(String operand) {
+    return Pattern.matches("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$", operand);
+  }
+
+
+  private String normalize(String operand) {
+    if (isValidRealNumber(operand)) {
+      return operand;
+    }
+    if (!operand.contains("(")) {
+      // operand doesn't contain function, and thus is a tag/field name requiring double quotes
+      return "\"" + operand + "\"";
+    }
+    // operand contains a function, assume power user and don't quote
+    return operand;
+  }
+  public String createLambda(EvalExpression evalExpression) {
+    List<String> normalizedOperands = evalExpression.getOperands().stream()
+            .map(this::normalize)
+            .collect(Collectors.toList());
+    
+    return "lambda: " + normalizedOperands.stream()
+            .collect(Collectors.joining(" " + evalExpression.getOperator() + " "));
+  }
+
+  public String joinEvals(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null || evalExpressionList.size() == 0) {
+      return null;
+    }
+
+    List<String> evalStrings = evalExpressionList.stream()
+            .map(this::createLambda)
+            .collect(Collectors.toList());
+
+    return evalStrings.stream().collect(Collectors.joining(", "));
+  }
+
+  public String joinAs(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null || evalExpressionList.size() == 0) {
+      return null;
+    }
+
+    return evalExpressionList.stream()
+            .map(evalExpression -> "'" + evalExpression.getAs() + "'")
+            .collect(Collectors.joining(", "));
+  }
+
+    @Data @Builder
   public static class TaskContext {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
@@ -118,5 +172,7 @@ public class TickScriptBuilder {
     String details = "";
     @Default
     String groupBy = Tags.RESOURCE_ID;
+    String joinedEvals;
+    String joinedAs;
   }
 }
