@@ -20,16 +20,19 @@ import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+import com.rackspace.salus.event.manage.model.validator.OperandValidator;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -107,12 +110,21 @@ public class TickScriptBuilder {
     if (isValidRealNumber(operand)) {
       return operand;
     }
-    if (!operand.contains("(")) {
+
+    Matcher matcher = Pattern.compile(OperandValidator.functionRegex).matcher(operand);
+
+    //  if operand is not a function call, double quote it
+    if (!matcher.matches()) {
       // operand doesn't contain function, and thus is a tag/field name requiring double quotes
       return "\"" + operand + "\"";
     }
-    // operand contains a function, assume power user and don't quote
-    return operand;
+    // Split out the function parameters, double quoting the tag/fields
+    String parameters = Arrays.stream(matcher.group(2).split(","))
+        .map(String::trim)
+        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
+        .collect(Collectors.joining(", "));
+
+    return matcher.group(1) + "(" + parameters + ")";
   }
   public String createLambda(EvalExpression evalExpression) {
     List<String> normalizedOperands = evalExpression.getOperands().stream()
@@ -145,7 +157,7 @@ public class TickScriptBuilder {
             .collect(Collectors.joining(", "));
   }
 
-    @Data @Builder
+  @Data @Builder
   public static class TaskContext {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
