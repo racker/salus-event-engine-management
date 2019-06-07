@@ -25,6 +25,11 @@ stream
     {{/-last}}
   {{/labels}}
 {{/labelsAvailable}}
+{{#joinedEvals}}
+|eval({{joinedEvals}})
+    .as({{joinedAs}})
+    .keep()
+{{/joinedEvals}}
 {{#critExpression}}
   |stateDuration(lambda: {{critExpression}})
     .unit(1m)

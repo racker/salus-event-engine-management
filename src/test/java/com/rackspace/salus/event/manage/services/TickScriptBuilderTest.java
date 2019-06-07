@@ -17,7 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import static com.rackspace.salus.test.JsonTestUtils.readContent;
-
+import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
@@ -30,6 +30,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.FileCopyUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
 
 
 @RunWith(SpringRunner.class)
@@ -158,4 +164,16 @@ public class TickScriptBuilderTest {
 
   }
 
+  @Test
+  public void testEvalExpression() {
+    List<String> operands = Arrays.asList("1.0", "cpu", "sigma(cpu)");
+    EvalExpression evalExpression = new EvalExpression().setAs("as1").setOperator("+").setOperands(operands);
+    List<EvalExpression> evalExpressions = new LinkedList<>();
+    evalExpressions.add(evalExpression);
+    evalExpressions.add(evalExpression);
+    TaskParameters tp = new TaskParameters().setEvalExpressions(evalExpressions);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+
+
+  }
 }
