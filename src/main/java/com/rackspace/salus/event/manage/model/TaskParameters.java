@@ -18,17 +18,15 @@ package com.rackspace.salus.event.manage.model;
 
 import com.rackspace.salus.event.manage.model.validator.TaskParametersValidator;
 import com.rackspace.salus.telemetry.model.ValidLabelKeys;
-import javax.validation.Valid;
-import lombok.Data;
-
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
+import javax.validation.Valid;
+import lombok.Data;
 
 @Data
 @TaskParametersValidator.AtLeastOneOf()
 public class TaskParameters {
+
   @Valid
   LevelExpression info;
   @Valid
@@ -49,6 +47,7 @@ public class TaskParameters {
 
   @Data
   public static class LevelExpression {
+
     @Valid
     Expression expression;
     Integer consecutiveCount;

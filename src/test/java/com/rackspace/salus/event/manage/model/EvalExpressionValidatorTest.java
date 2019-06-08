@@ -31,7 +31,8 @@ public class EvalExpressionValidatorTest {
         .setOperator("+")
         .setAs("as1");
 
-    final Set<ConstraintViolation<EvalExpression>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EvalExpression>> results = validatorFactoryBean
+        .validate(resource);
     assertThat(results, equalTo(Collections.emptySet()));
   }
 
@@ -44,10 +45,11 @@ public class EvalExpressionValidatorTest {
         .setOperator("+")
         .setAs("as1");
 
-    final Set<ConstraintViolation<EvalExpression>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EvalExpression>> results = validatorFactoryBean
+        .validate(resource);
     assertThat(results.size(), equalTo(1));
     final ConstraintViolation<EvalExpression> violation = results.iterator().next();
-    assertThat(violation.getMessage(), equalTo( "Invalid eval expression"));
+    assertThat(violation.getMessage(), equalTo("Invalid eval expression"));
 
   }
 

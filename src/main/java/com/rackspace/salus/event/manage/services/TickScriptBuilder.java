@@ -135,6 +135,9 @@ public class TickScriptBuilder {
   }
 
   public String joinEvals(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null) {
+      return null;
+    }
     List<String> evalStrings = evalExpressionList.stream()
             .map(this::createLambda)
             .collect(Collectors.toList());
@@ -143,6 +146,9 @@ public class TickScriptBuilder {
   }
 
   public String joinAs(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null) {
+      return null;
+    }
     return evalExpressionList.stream()
             .map(evalExpression -> "'" + evalExpression.getAs() + "'")
             .collect(Collectors.joining(", "));
