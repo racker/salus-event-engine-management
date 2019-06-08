@@ -138,11 +138,9 @@ public class TickScriptBuilder {
     if (evalExpressionList == null) {
       return null;
     }
-    List<String> evalStrings = evalExpressionList.stream()
+    return evalExpressionList.stream()
             .map(this::createLambda)
-            .collect(Collectors.toList());
-
-    return evalStrings.stream().collect(Collectors.joining(", "));
+            .collect(Collectors.joining(", "));
   }
 
   public String joinAs(List<EvalExpression> evalExpressionList) {
