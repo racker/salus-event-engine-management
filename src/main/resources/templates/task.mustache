@@ -8,12 +8,12 @@ stream
     .every({{windowLength}}m)
 {{/windowLength}}
 {{#windowFields}}
-  |max('{{toString}}')
-    .as('max_{{toString}}')
-  |min('{{toString}}')
-    .as('min_{{toString}}')
-  |mean('{{toString}}')
-    .as('avg_{{toString}}')
+  |max('{{.}}')
+    .as('max_{{.}}')
+  |min('{{.}}')
+    .as('min_{{.}}')
+  |mean('{{.}}')
+    .as('avg_{{.}}')
 {{/windowFields}}
 {{#labelsAvailable}}
   |where(lambda:
