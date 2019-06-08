@@ -85,6 +85,8 @@ public class TickScriptBuilder {
         .flappingDetection(taskParameters.isFlappingDetection())
         .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
         .joinedAs(joinAs(taskParameters.getEvalExpressions()))
+        .windowLength(taskParameters.getWindowLength())
+        .windowFields(taskParameters.getWindowFields())
         .build());
   }
 
@@ -168,7 +170,7 @@ public class TickScriptBuilder {
     @Default
     Integer windowLength = null;
     @Default
-    String windowField = null;
+    List<String> windowFields = null;
     @Default
     float flappingLower = .25f;
     @Default

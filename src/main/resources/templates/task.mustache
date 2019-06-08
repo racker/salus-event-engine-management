@@ -6,13 +6,15 @@ stream
   |window()
     .period({{windowLength}}m)
     .every({{windowLength}}m)
-  |max({{windowField}})
-    .as('max_{{windowField}}')
-  |min({{windowField}})
-    .as('min_{{windowField}}')
-  |mean({{windowField}})
-    .as('avg_{{windowField}}')
 {{/windowLength}}
+{{#windowFields}}
+  |max('{{toString}}')
+    .as('max_{{toString}}')
+  |min('{{toString}}')
+    .as('min_{{toString}}')
+  |mean('{{toString}}')
+    .as('avg_{{toString}}')
+{{/windowFields}}
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}

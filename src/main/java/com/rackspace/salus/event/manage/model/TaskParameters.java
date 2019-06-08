@@ -37,8 +37,8 @@ public class TaskParameters {
   @Valid
   List<EvalExpression> evalExpressions;
 
-  int windowLength;
-  String windowField;
+  Integer windowLength;
+  List<String> windowFields;
 
   boolean flappingDetection;
 

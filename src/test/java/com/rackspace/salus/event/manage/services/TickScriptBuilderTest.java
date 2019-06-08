@@ -190,4 +190,13 @@ public class TickScriptBuilderTest {
     Assert.assertEquals(expectedString, script);
 
   }
+  @Test
+  public void testWindows() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
+    List<String> windowFields = Arrays.asList("field1", "field2");
+    TaskParameters tp = new TaskParameters().setWindowFields(windowFields).setWindowLength(8);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+
+  }
 }
