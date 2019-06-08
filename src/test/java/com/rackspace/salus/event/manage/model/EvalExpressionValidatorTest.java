@@ -16,7 +16,6 @@ public class EvalExpressionValidatorTest {
 
   private LocalValidatorFactoryBean validatorFactoryBean;
 
-
   @Before
   public void setUp() {
     validatorFactoryBean = new LocalValidatorFactoryBean();

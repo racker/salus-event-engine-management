@@ -104,7 +104,6 @@ public class TickScriptBuilder {
     return Pattern.matches("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$", operand);
   }
 
-
   private String normalize(String operand) {
     if (isValidRealNumber(operand)) {
       return operand;
@@ -117,7 +116,8 @@ public class TickScriptBuilder {
       // operand doesn't contain function, and thus is a tag/field name requiring double quotes
       return "\"" + operand + "\"";
     }
-    // Split out the function parameters, double quoting the tag/fields
+
+    // Operand is function call, so split out the function parameters, double quoting the tag/fields
     String parameters = Arrays.stream(matcher.group(2).split(","))
         .map(String::trim)
         .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
