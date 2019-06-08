@@ -165,14 +165,20 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testEvalExpression() {
-    List<String> operands = Arrays.asList("1.0", "cpu", "sigma(cpu)");
-    EvalExpression evalExpression = new EvalExpression().setAs("as1").setOperator("+").setOperands(operands);
+  public void testEvalExpression() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildEval.tick");
+
+    List<String> operands1 = Arrays.asList("1.0", "field", "sigma(cpu,1)");
+    EvalExpression evalExpression1 = new EvalExpression().setAs("as1").setOperator("+").setOperands(operands1);
+    List<String> operands2 = Arrays.asList("2.0", "tag", "count(field2,1)");
+    EvalExpression evalExpression2 = new EvalExpression().setAs("as2").setOperator("-").setOperands(operands2);
+
     List<EvalExpression> evalExpressions = new LinkedList<>();
-    evalExpressions.add(evalExpression);
-    evalExpressions.add(evalExpression);
+    evalExpressions.add(evalExpression1);
+    evalExpressions.add(evalExpression2);
     TaskParameters tp = new TaskParameters().setEvalExpressions(evalExpressions);
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
 
 
   }

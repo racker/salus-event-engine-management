@@ -1,0 +1,13 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('resourceId')
+  |eval(lambda: 1.0 + "field" + sigma("cpu", 1), lambda: 2.0 - "tag" - count("field2", 1))
+    .as('as1', 'as2')
+    .keep()
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .details('task={{.TaskName}}')
+    .history(21)
+    .topic('events')
