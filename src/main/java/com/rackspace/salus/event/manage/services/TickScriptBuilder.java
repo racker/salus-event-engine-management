@@ -20,7 +20,7 @@ import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
-import com.rackspace.salus.event.manage.model.validator.OperandValidator;
+import com.rackspace.salus.event.manage.model.validator.EvalExpressionValidator;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -30,7 +30,6 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -111,7 +110,7 @@ public class TickScriptBuilder {
       return operand;
     }
 
-    Matcher matcher = Pattern.compile(OperandValidator.functionRegex).matcher(operand);
+    Matcher matcher = Pattern.compile(EvalExpressionValidator.functionRegex).matcher(operand);
 
     //  if operand is not a function call, double quote it
     if (!matcher.matches()) {
@@ -136,10 +135,6 @@ public class TickScriptBuilder {
   }
 
   public String joinEvals(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null || evalExpressionList.size() == 0) {
-      return null;
-    }
-
     List<String> evalStrings = evalExpressionList.stream()
             .map(this::createLambda)
             .collect(Collectors.toList());
@@ -148,10 +143,6 @@ public class TickScriptBuilder {
   }
 
   public String joinAs(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null || evalExpressionList.size() == 0) {
-      return null;
-    }
-
     return evalExpressionList.stream()
             .map(evalExpression -> "'" + evalExpression.getAs() + "'")
             .collect(Collectors.joining(", "));
