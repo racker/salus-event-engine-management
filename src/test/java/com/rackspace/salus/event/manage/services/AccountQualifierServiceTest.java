@@ -33,11 +33,11 @@ public class AccountQualifierServiceTest {
 
     assertThat(
         service.convertFromTenant("123456"),
-        equalTo("UNKNOWN:123456")
+        equalTo("RCN:123456")
     );
     assertThat(
         service.convertFromTenant("any:123456"),
-        equalTo("UNKNOWN:123456")
+        equalTo("RCN:123456")
     );
 
   }

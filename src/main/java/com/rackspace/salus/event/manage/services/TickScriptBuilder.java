@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.samskivert.mustache.Escapers;
@@ -26,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.Set;
-
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -117,6 +117,6 @@ public class TickScriptBuilder {
     @Default
     String details = "";
     @Default
-    String groupBy = "resourceId";
+    String groupBy = Tags.RESOURCE_ID;
   }
 }

@@ -1,0 +1,12 @@
+{
+  "id": "k-1",
+  "type": "stream",
+  "script": "built script",
+  "dbrps": [
+    {
+      "db": "TYPE:t-1",
+      "rp": "ingest"
+    }
+  ],
+  "status": "enabled"
+}

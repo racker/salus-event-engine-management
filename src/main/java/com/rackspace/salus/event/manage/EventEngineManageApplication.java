@@ -16,13 +16,17 @@
 
 package com.rackspace.salus.event.manage;
 
+import com.rackspace.salus.common.web.ExtendedErrorAttributesConfig;
 import com.rackspace.salus.event.discovery.DiscoveryServiceModule;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@Import(DiscoveryServiceModule.class)
+@Import({
+    DiscoveryServiceModule.class,
+    ExtendedErrorAttributesConfig.class
+})
 public class EventEngineManageApplication {
 
   public static void main(String[] args) {

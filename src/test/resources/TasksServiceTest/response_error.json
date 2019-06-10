@@ -1,0 +1,8 @@
+{
+  "link" : {"rel": "self", "href": "/kapacitor/v1/tasks/k-1"},
+  "id" : "k-1",
+  "type" : "stream",
+  "script": "built script",
+  "dbrps" : [{"db": "TYPE:t-1", "rp" : "ingest"}],
+  "error" : "something is wrong"
+}

@@ -16,23 +16,20 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import static com.rackspace.salus.test.JsonTestUtils.readContent;
+
 import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.util.FileCopyUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
 
 
 @RunWith(SpringRunner.class)
@@ -159,12 +156,6 @@ public class TickScriptBuilderTest {
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
 
-  }
-
-  private static String readContent(String resource) throws IOException {
-    try (InputStream in = new ClassPathResource(resource).getInputStream()) {
-      return FileCopyUtils.copyToString(new InputStreamReader(in));
-    }
   }
 
 }

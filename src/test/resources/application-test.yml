@@ -1,3 +1,4 @@
+event.discovery.port-strategy.host: localhost
 spring:
   datasource:
     platform: h2
