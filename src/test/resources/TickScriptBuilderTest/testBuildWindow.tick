@@ -1,7 +1,7 @@
 stream
   |from()
     .measurement('measurement')
-    .groupBy('resourceId')
+    .groupBy('system_resource_id')
   |window()
     .period(8m)
     .every(8m)

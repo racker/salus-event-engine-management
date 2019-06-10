@@ -46,12 +46,6 @@ public class TickScriptBuilderTest {
   @Autowired
   TickScriptBuilder tickScriptBuilder;
 
-  private static String readContent(String resource) throws IOException {
-    try (InputStream in = new ClassPathResource(resource).getInputStream()) {
-      return FileCopyUtils.copyToString(new InputStreamReader(in));
-    }
-  }
-
   @Test
   public void testBuild() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
