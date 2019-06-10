@@ -29,3 +29,24 @@ will provide the Java model classes used for interacting with the REST API.
         </dependency>
 
 ```
+
+## Eval node syntax:
+so, for example, if the json for the eval expression list is:
+```
+[
+  {operands: ["value", "value"],
+   operator: "*",
+   as: "value2"
+  },
+  {operands: [1.0, "value2"],
+   operator: "/",
+   as: "inv_value2"
+  }
+]
+```
+
+the corresponding tick script generated is:
+```
+eval(lambda: "value" * "value", lambda: 1.0 / "value2")
+    .as('value2', 'inv_value2')
+```
