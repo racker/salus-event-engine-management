@@ -10,7 +10,10 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -22,7 +25,7 @@ public class EvalExpressionValidator implements
     ConstraintValidator<EvalExpressionValidation, EvalExpression> {
 
   public static String functionRegex = "(\\w+)\\((.*)\\)";
-  private static List<String> validFunctions = Arrays.asList(
+  private static List<String> functionList = Arrays.asList(
 
       // Stateful functions
       "spread", "sigma", "count",
@@ -55,12 +58,15 @@ public class EvalExpressionValidator implements
       //  https://docs.influxdata.com/kapacitor/v1.5/tick/expr/#conditional-functions
   );
 
+  private static Set<String> validFunctions = new HashSet<>(functionList);
+
   private boolean isValidOperand(String operand) {
-    if (!Pattern.matches(functionRegex, operand)) {
+    Matcher matcher = Pattern.compile(functionRegex).matcher(operand);
+    if (!matcher.matches()) {
       return true;
     }
     // confirm function call invokes valid function name
-    return validFunctions.stream().anyMatch(f -> operand.startsWith(f + "("));
+    return validFunctions.contains(matcher.group(1));
   }
 
   @Override
