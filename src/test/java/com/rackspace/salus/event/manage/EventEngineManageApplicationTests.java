@@ -19,12 +19,12 @@ package com.rackspace.salus.event.manage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-    properties = "event.discovery.port-strategy.host=localhost"
-)
+@SpringBootTest
+@ActiveProfiles("test")
 public class EventEngineManageApplicationTests {
 
   @Test

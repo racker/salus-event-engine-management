@@ -39,7 +39,7 @@ public class TenantMappingProperties {
    * pre-pended to the tenant value separated by the
    */
   @NotEmpty
-  String defaultAccountType = "UNKNOWN";
+  String defaultAccountType = "RCN";
 
   /**
    * The delimiter to expect when processing tenant values.

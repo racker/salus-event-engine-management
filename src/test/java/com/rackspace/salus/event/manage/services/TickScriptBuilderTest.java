@@ -16,23 +16,27 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import static com.rackspace.salus.test.JsonTestUtils.readContent;
+import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+import java.io.IOException;
+import java.util.HashMap;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.FileCopyUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
 
 
 @RunWith(SpringRunner.class)
@@ -43,7 +47,7 @@ public class TickScriptBuilderTest {
   TickScriptBuilder tickScriptBuilder;
 
   @Test
-  public void testBuild() throws IOException{
+  public void testBuild() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
 
     LevelExpression critExpression = new LevelExpression();
@@ -52,7 +56,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
-    Map<String, String> labelSelectors = new HashMap();
+    Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     TaskParameters tp = new TaskParameters()
         .setCritical(critExpression)
@@ -64,7 +68,7 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testBuildOnlyInfo() throws IOException{
+  public void testBuildOnlyInfo() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
 
     LevelExpression infoExpression = new LevelExpression();
@@ -73,7 +77,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
-    Map<String, String> labelSelectors = new HashMap();
+    Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     TaskParameters tp = new TaskParameters()
         .setInfo(infoExpression)
@@ -85,7 +89,7 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testBuildMultipleExpressions() throws IOException{
+  public void testBuildMultipleExpressions() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
 
     LevelExpression critExpression = new LevelExpression();
@@ -108,7 +112,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(20));
-    Map<String, String> labelSelectors = new HashMap();
+    Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     TaskParameters tp = new TaskParameters()
         .setCritical(critExpression)
@@ -122,7 +126,7 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testBuildNoLabels() throws IOException{
+  public void testBuildNoLabels() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
     LevelExpression critExpression = new LevelExpression();
@@ -140,9 +144,9 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testBuildMultipleLabels() throws IOException{
+  public void testBuildMultipleLabels() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleLabels.tick");
-    Map<String, String> labelSelectors = new HashMap();
+    Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
 
@@ -161,10 +165,32 @@ public class TickScriptBuilderTest {
 
   }
 
-  private static String readContent(String resource) throws IOException {
-    try (InputStream in = new ClassPathResource(resource).getInputStream()) {
-      return FileCopyUtils.copyToString(new InputStreamReader(in));
-    }
-  }
+  @Test
+  public void testEvalExpression() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildEval.tick");
 
+    List<String> operands1 = Arrays.asList("1.0", "field", "sigma(cpu,1)");
+    EvalExpression evalExpression1 = new EvalExpression().setAs("as1").setOperator("+")
+        .setOperands(operands1);
+    List<String> operands2 = Arrays.asList("2.0", "tag", "count(field2,1)");
+    EvalExpression evalExpression2 = new EvalExpression().setAs("as2").setOperator("-")
+        .setOperands(operands2);
+
+    List<EvalExpression> evalExpressions = new LinkedList<>();
+    evalExpressions.add(evalExpression1);
+    evalExpressions.add(evalExpression2);
+    TaskParameters tp = new TaskParameters().setEvalExpressions(evalExpressions);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+
+  }
+  @Test
+  public void testWindows() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
+    List<String> windowFields = Arrays.asList("field1", "field2");
+    TaskParameters tp = new TaskParameters().setWindowFields(windowFields).setWindowLength(8);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+
+  }
 }

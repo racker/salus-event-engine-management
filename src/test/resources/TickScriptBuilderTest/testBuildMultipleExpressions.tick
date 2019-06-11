@@ -1,7 +1,7 @@
 stream
   |from()
     .measurement('measurement')
-    .groupBy('resourceId')
+    .groupBy('system_resource_id')
   |where(lambda:
     if(isPresent("resource_metadata_os"), "resource_metadata_os" == 'linux', FALSE)
       )

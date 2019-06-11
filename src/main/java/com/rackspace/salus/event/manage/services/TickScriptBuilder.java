@@ -16,17 +16,24 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.event.common.Tags;
+import com.rackspace.salus.event.manage.model.EvalExpression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+import com.rackspace.salus.event.manage.model.validator.EvalExpressionValidator;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
@@ -76,6 +83,10 @@ public class TickScriptBuilder {
         .critCount(
           buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
         .flappingDetection(taskParameters.isFlappingDetection())
+        .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
+        .joinedAs(joinAs(taskParameters.getEvalExpressions()))
+        .windowLength(taskParameters.getWindowLength())
+        .windowFields(taskParameters.getWindowFields())
         .build());
   }
 
@@ -89,6 +100,58 @@ public class TickScriptBuilder {
   public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
     return consecutiveCount != null ? String.format(formatString, consecutiveCount.getConsecutiveCount()) :
         null;
+  }
+
+  private Boolean isValidRealNumber(String operand) {
+    return Pattern.matches("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$", operand);
+  }
+
+  private String normalize(String operand) {
+    if (isValidRealNumber(operand)) {
+      return operand;
+    }
+
+    Matcher matcher = Pattern.compile(EvalExpressionValidator.functionRegex).matcher(operand);
+
+    //  if operand is not a function call, double quote it
+    if (!matcher.matches()) {
+      // operand doesn't contain function, and thus is a tag/field name requiring double quotes
+      return "\"" + operand + "\"";
+    }
+
+    // Operand is function call, so split out the function parameters, double quoting the tag/fields
+    String parameters = Arrays.stream(matcher.group(2).split(","))
+        .map(String::trim)
+        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
+        .collect(Collectors.joining(", "));
+
+    return matcher.group(1) + "(" + parameters + ")";
+  }
+  public String createLambda(EvalExpression evalExpression) {
+    List<String> normalizedOperands = evalExpression.getOperands().stream()
+            .map(this::normalize)
+            .collect(Collectors.toList());
+    
+    return "lambda: " + normalizedOperands.stream()
+            .collect(Collectors.joining(" " + evalExpression.getOperator() + " "));
+  }
+
+  public String joinEvals(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null) {
+      return null;
+    }
+    return evalExpressionList.stream()
+            .map(this::createLambda)
+            .collect(Collectors.joining(", "));
+  }
+
+  public String joinAs(List<EvalExpression> evalExpressionList) {
+    if (evalExpressionList == null) {
+      return null;
+    }
+    return evalExpressionList.stream()
+            .map(evalExpression -> "'" + evalExpression.getAs() + "'")
+            .collect(Collectors.joining(", "));
   }
 
   @Data @Builder
@@ -107,7 +170,7 @@ public class TickScriptBuilder {
     @Default
     Integer windowLength = null;
     @Default
-    String windowField = null;
+    List<String> windowFields = null;
     @Default
     float flappingLower = .25f;
     @Default
@@ -117,6 +180,8 @@ public class TickScriptBuilder {
     @Default
     String details = "";
     @Default
-    String groupBy = "resourceId";
+    String groupBy = Tags.RESOURCE_ID;
+    String joinedEvals;
+    String joinedAs;
   }
 }

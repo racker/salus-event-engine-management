@@ -6,13 +6,15 @@ stream
   |window()
     .period({{windowLength}}m)
     .every({{windowLength}}m)
-  |max({{windowField}})
-    .as('max_{{windowField}}')
-  |min({{windowField}})
-    .as('min_{{windowField}}')
-  |mean({{windowField}})
-    .as('avg_{{windowField}}')
 {{/windowLength}}
+{{#windowFields}}
+  |max('{{.}}')
+    .as('max_{{.}}')
+  |min('{{.}}')
+    .as('min_{{.}}')
+  |mean('{{.}}')
+    .as('avg_{{.}}')
+{{/windowFields}}
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}
@@ -25,6 +27,11 @@ stream
     {{/-last}}
   {{/labels}}
 {{/labelsAvailable}}
+{{#joinedEvals}}
+  |eval({{joinedEvals}})
+    .as({{joinedAs}})
+    .keep()
+{{/joinedEvals}}
 {{#critExpression}}
   |stateDuration(lambda: {{critExpression}})
     .unit(1m)
