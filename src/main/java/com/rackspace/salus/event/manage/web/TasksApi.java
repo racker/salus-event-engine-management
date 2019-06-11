@@ -23,13 +23,13 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.CreateTaskResponse;
 import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.services.TasksService;
+import com.rackspace.salus.telemetry.model.PagedContent;
 import com.rackspace.salus.telemetry.model.View;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -75,11 +75,11 @@ public class TasksApi {
   @GetMapping("/tenant/{tenantId}/tasks")
   @ApiOperation(value = "Gets all Tasks for the specific Tenant")
   @JsonView(View.Public.class)
-  public List<EventEngineTaskDTO> getTasks(@PathVariable String tenantId) {
+  public PagedContent<EventEngineTaskDTO> getTasks(@PathVariable String tenantId, Pageable pageable) {
 
-    return tasksService.getTasks(tenantId).stream()
-        .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class))
-        .collect(Collectors.toList());
+    return PagedContent.fromPage(
+        tasksService.getTasks(tenantId, pageable)
+            .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class)));
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")
