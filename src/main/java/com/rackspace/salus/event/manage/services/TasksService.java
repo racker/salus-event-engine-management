@@ -35,6 +35,8 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -139,12 +141,8 @@ public class TasksService {
     return eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  public List<EventEngineTask> getTasks(String tenantId) {
-    return eventEngineTaskRepository.findByTenantId(tenantId);
-  }
-
-  public List<EventEngineTask> getTasks(String tenantId, String measurement) {
-    return eventEngineTaskRepository.findByTenantIdAndMeasurement(tenantId, measurement);
+  public Page<EventEngineTask> getTasks(String tenantId, Pageable page) {
+    return eventEngineTaskRepository.findByTenantId(tenantId, page);
   }
 
   public void deleteTask(String tenantId, UUID taskDbId) {

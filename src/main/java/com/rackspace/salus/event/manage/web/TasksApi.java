@@ -16,18 +16,20 @@
 
 package com.rackspace.salus.event.manage.web;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.manage.entities.EventEngineTask;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.CreateTaskResponse;
 import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.services.TasksService;
-import java.util.List;
+import com.rackspace.salus.telemetry.model.PagedContent;
+import com.rackspace.salus.telemetry.model.View;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/tasks/")
+@RequestMapping("/api/")
 @Api(description = "Monitor operations", authorizations = {
         @Authorization(value = "repose_auth",
                 scopes = {
@@ -59,9 +61,10 @@ public class TasksApi {
     this.objectMapper = objectMapper;
   }
 
-  @PostMapping("{tenantId}")
+  @PostMapping("/tenant/{tenantId}/tasks")
   @ApiOperation(value = "Creates Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
+  @JsonView(View.Public.class)
   public CreateTaskResponse createTask(@PathVariable String tenantId,
                                        @RequestBody @Validated CreateTask task) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
@@ -69,28 +72,20 @@ public class TasksApi {
     return objectMapper.convertValue(eventEngineTask, CreateTaskResponse.class);
   }
 
-  @GetMapping("{tenantId}")
+  @GetMapping("/tenant/{tenantId}/tasks")
   @ApiOperation(value = "Gets all Tasks for the specific Tenant")
-  public List<EventEngineTaskDTO> getTasks(@PathVariable String tenantId) {
+  @JsonView(View.Public.class)
+  public PagedContent<EventEngineTaskDTO> getTasks(@PathVariable String tenantId, Pageable pageable) {
 
-    return tasksService.getTasks(tenantId).stream()
-        .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class))
-        .collect(Collectors.toList());
+    return PagedContent.fromPage(
+        tasksService.getTasks(tenantId, pageable)
+            .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class)));
   }
 
-  @GetMapping("{tenantId}/{measurement}")
-  @ApiOperation(value = "Gets Tasks for Tenant where the Measurement matches")
-  public List<EventEngineTaskDTO> getTasksByMeasurement(@PathVariable String tenantId,
-                                                        @PathVariable String measurement) {
-
-    return tasksService.getTasks(tenantId, measurement).stream()
-        .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class))
-        .collect(Collectors.toList());
-  }
-
-  @DeleteMapping("{tenantId}/{taskId}")
+  @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")
   @ApiOperation(value = "Deletes Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
+  @JsonView(View.Public.class)
   public void deleteTask(@PathVariable String tenantId,
                          @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);

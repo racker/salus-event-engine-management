@@ -19,11 +19,13 @@ package com.rackspace.salus.event.manage.repositories;
 import com.rackspace.salus.event.manage.entities.EventEngineTask;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 
 public interface EventEngineTaskRepository extends CrudRepository<EventEngineTask, UUID> {
 
-  List<EventEngineTask> findByTenantId(String tenantId);
+  Page<EventEngineTask> findByTenantId(String tenantId, Pageable pageable);
 
   List<EventEngineTask> findByTenantIdAndMeasurement(String tenantId, String measurement);
 }
