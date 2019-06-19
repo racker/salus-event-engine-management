@@ -1,5 +1,7 @@
 event.discovery.port-strategy.host: localhost
 spring:
+  application:
+    name: salus-event-engine-management
   datasource:
     platform: h2
   jpa:
