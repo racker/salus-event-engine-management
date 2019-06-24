@@ -16,16 +16,21 @@
 
 package com.rackspace.salus.event.manage.entities;
 
+import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.*;
 
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(
@@ -45,6 +50,9 @@ public class EventEngineTask {
   String tenantId;
 
   @Column(nullable = false)
+  String name;
+
+  @Column(nullable = false)
   String measurement;
 
   @Column(nullable = false)
@@ -54,11 +62,23 @@ public class EventEngineTask {
   @Column(nullable = false, columnDefinition = "json")
   TaskParameters taskParameters;
 
-  /**
-   * Labels are an indexed and query'able aspect of resources that are used for event task
-   * matching.
-   */
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name="event_engine_task_label_selector", joinColumns = @JoinColumn(name="id"))
-  Map<String,String> labelSelector;
+  @CreationTimestamp
+  @Column(name="created_timestamp")
+  Instant createdTimestamp;
+
+  @UpdateTimestamp
+  @Column(name="updated_timestamp")
+  Instant updatedTimestamp;
+
+  public EventEngineTaskDTO toDTO() {
+    return new EventEngineTaskDTO()
+        .setId(id)
+        .setTenantId(tenantId)
+        .setTaskId(taskId)
+        .setName(name)
+        .setMeasurement(measurement)
+        .setTaskParameters(taskParameters)
+        .setCreatedTimestamp(DateTimeFormatter.ISO_INSTANT.format(createdTimestamp))
+        .setUpdatedTimestamp(DateTimeFormatter.ISO_INSTANT.format(updatedTimestamp));
+  }
 }

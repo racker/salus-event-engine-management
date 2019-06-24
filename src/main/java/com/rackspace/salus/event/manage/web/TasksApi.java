@@ -79,7 +79,7 @@ public class TasksApi {
 
     return PagedContent.fromPage(
         tasksService.getTasks(tenantId, pageable)
-            .map(eventEngineTask -> objectMapper.convertValue(eventEngineTask, EventEngineTaskDTO.class)));
+            .map(EventEngineTask::toDTO));
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")

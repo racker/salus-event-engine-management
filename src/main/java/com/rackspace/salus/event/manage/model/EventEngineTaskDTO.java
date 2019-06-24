@@ -17,14 +17,22 @@
 package com.rackspace.salus.event.manage.model;
 
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.rackspace.salus.telemetry.model.View;
 import java.util.UUID;
 import lombok.Data;
 
 @Data
 public class EventEngineTaskDTO {
   UUID id;
+
+  @JsonView(View.Admin.class)
   String tenantId;
+
+  String name;
   String measurement;
-  String label;
+  String taskId;
   TaskParameters taskParameters;
+  String createdTimestamp;
+  String updatedTimestamp;
 }
