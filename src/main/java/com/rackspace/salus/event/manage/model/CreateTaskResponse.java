@@ -24,6 +24,6 @@ public class CreateTaskResponse {
   UUID id;
   String tenantId;
   String measurement;
-  String label;
+  String name;
   TaskParameters taskParameters;
 }

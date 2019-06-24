@@ -135,6 +135,7 @@ public class TasksService {
         .setId(taskId.getBaseId())
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
+        .setName(in.getName())
         .setTaskId(taskId.getKapacitorTaskId())
         .setTaskParameters(in.getTaskParameters());
 
