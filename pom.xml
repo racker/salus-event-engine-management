@@ -143,6 +143,12 @@
       <version>0.0.1-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>uk.co.jemos.podam</groupId>
+      <artifactId>podam</artifactId>
+      <version>7.2.1.RELEASE</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
