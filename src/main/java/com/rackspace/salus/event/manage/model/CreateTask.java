@@ -24,6 +24,10 @@ import lombok.Data;
 
 @Data
 public class CreateTask {
+
+  @NotEmpty
+  String name;
+
   @NotEmpty
   String measurement;
 
