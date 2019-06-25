@@ -238,7 +238,7 @@
             <argument>${project.build.directory}/generated/swagger</argument>
             <argument>${basedir}/templates/strapdown.html.hbs</argument>
             <argument>{tenantId}=</argument>
-            <argument>tasks/=eventTasks</argument>
+            <argument>tasks/=event-tasks</argument>
           </arguments>
         </configuration>
       </plugin>
