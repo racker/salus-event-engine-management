@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model;
+package com.rackspace.salus.event.manage.web.model;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.manage.entities.EventEngineTask;
+import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.telemetry.model.View;
 import org.junit.Test;
 import uk.co.jemos.podam.api.PodamFactory;
