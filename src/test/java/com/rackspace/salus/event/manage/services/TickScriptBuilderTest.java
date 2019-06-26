@@ -23,10 +23,7 @@ import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import java.io.IOException;
 import java.util.HashMap;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +33,10 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.util.FileCopyUtils;
 
 
 @RunWith(SpringRunner.class)
-@Import({TickScriptBuilder.class, TaskIdGenerator.class})
+@Import({TickScriptBuilder.class, KapacitorTaskIdGenerator.class})
 public class TickScriptBuilderTest {
 
   @Autowired

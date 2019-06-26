@@ -32,7 +32,8 @@ public class EventEngineTaskDTO {
 
   String name;
   String measurement;
-  String taskId;
+  @JsonView(View.Admin.class)
+  String kapacitorTaskId;
   TaskParameters taskParameters;
   String createdTimestamp;
   String updatedTimestamp;

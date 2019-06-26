@@ -26,7 +26,7 @@ import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Type;
 import com.rackspace.salus.event.manage.repositories.EventEngineTaskRepository;
-import com.rackspace.salus.event.manage.services.TaskIdGenerator.TaskId;
+import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,26 +50,26 @@ public class TasksService {
   private final EventEnginePicker eventEnginePicker;
   private final RestTemplate restTemplate;
   private final EventEngineTaskRepository eventEngineTaskRepository;
-  private final TaskIdGenerator taskIdGenerator;
+  private final KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
   private final TickScriptBuilder tickScriptBuilder;
   private final AccountQualifierService accountQualifierService;
 
   @Autowired
   public TasksService(EventEnginePicker eventEnginePicker, RestTemplateBuilder restTemplateBuilder,
                       EventEngineTaskRepository eventEngineTaskRepository,
-                      TaskIdGenerator taskIdGenerator, TickScriptBuilder tickScriptBuilder,
+                      KapacitorTaskIdGenerator kapacitorTaskIdGenerator, TickScriptBuilder tickScriptBuilder,
                       AccountQualifierService accountQualifierService) {
     this.eventEnginePicker = eventEnginePicker;
     this.restTemplate = restTemplateBuilder.build();
     this.eventEngineTaskRepository = eventEngineTaskRepository;
-    this.taskIdGenerator = taskIdGenerator;
+    this.kapacitorTaskIdGenerator = kapacitorTaskIdGenerator;
     this.tickScriptBuilder = tickScriptBuilder;
     this.accountQualifierService = accountQualifierService;
   }
 
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
-    final TaskId taskId = taskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
+    final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
     final Task task = Task.builder()
         .id(taskId.getKapacitorTaskId())
         .type(Type.stream)
@@ -136,7 +136,7 @@ public class TasksService {
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
         .setName(in.getName())
-        .setTaskId(taskId.getKapacitorTaskId())
+        .setKapacitorTaskId(taskId.getKapacitorTaskId())
         .setTaskParameters(in.getTaskParameters());
 
     return eventEngineTaskRepository.save(eventEngineTask);
@@ -159,7 +159,7 @@ public class TasksService {
 
     eventEngineTaskRepository.delete(eventEngineTask);
 
-    deleteTaskFromKapacitors(eventEngineTask.getTaskId(), eventEnginePicker.pickAll());
+    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll());
   }
 
   private void deleteTaskFromKapacitors(String kapacitorTaskId,
@@ -167,7 +167,7 @@ public class TasksService {
     for (EngineInstance engineInstance : engineInstances) {
       log.debug("Deleting kapacitorTask={} from instance={}", kapacitorTaskId, engineInstance);
       try {
-        restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{taskId}",
+        restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{kapacitorTaskId}",
             engineInstance.getHost(),
             engineInstance.getPort(),
             kapacitorTaskId

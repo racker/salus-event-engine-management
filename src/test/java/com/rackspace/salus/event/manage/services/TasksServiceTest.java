@@ -39,7 +39,7 @@ import com.rackspace.salus.event.manage.model.Expression;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.rackspace.salus.event.manage.repositories.EventEngineTaskRepository;
-import com.rackspace.salus.event.manage.services.TaskIdGenerator.TaskId;
+import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -78,7 +78,7 @@ public class TasksServiceTest {
   EventEngineTaskRepository eventEngineTaskRepository;
 
   @MockBean
-  TaskIdGenerator taskIdGenerator;
+  KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
 
   @MockBean
   TickScriptBuilder tickScriptBuilder;
@@ -92,10 +92,10 @@ public class TasksServiceTest {
   @Test
   public void testCreate_success() throws IOException {
 
-    final TaskId taskId = new TaskId()
+    final KapacitorTaskId taskId = new KapacitorTaskId()
         .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
         .setKapacitorTaskId("k-1");
-    when(taskIdGenerator.generateTaskId(any(), any()))
+    when(kapacitorTaskIdGenerator.generateTaskId(any(), any()))
         .thenReturn(taskId
         );
 
@@ -139,7 +139,7 @@ public class TasksServiceTest {
 
     assertThat(result).isNotNull();
 
-    verify(taskIdGenerator).generateTaskId("t-1", "cpu");
+    verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
     verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
 
@@ -153,7 +153,7 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, taskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -183,10 +183,10 @@ public class TasksServiceTest {
 
   private void common_testCreate_fail(ResponseCreator responseCreator) throws IOException {
 
-    final TaskId taskId = new TaskId()
+    final KapacitorTaskId taskId = new KapacitorTaskId()
         .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
         .setKapacitorTaskId("k-1");
-    when(taskIdGenerator.generateTaskId(any(), any()))
+    when(kapacitorTaskIdGenerator.generateTaskId(any(), any()))
         .thenReturn(taskId
         );
 
@@ -240,7 +240,7 @@ public class TasksServiceTest {
 
     // VERIFY
 
-    verify(taskIdGenerator).generateTaskId("t-1", "cpu");
+    verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
     verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
 
@@ -250,7 +250,7 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, taskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -261,7 +261,7 @@ public class TasksServiceTest {
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
         .setTenantId("t-1")
-        .setTaskId("k-1");
+        .setKapacitorTaskId("k-1");
     when(eventEngineTaskRepository.findById(any()))
         .thenReturn(Optional.of(
             eventEngineTask
@@ -296,7 +296,7 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, taskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -323,7 +323,7 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, taskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -334,7 +334,7 @@ public class TasksServiceTest {
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
         .setTenantId("t-someone-else")
-        .setTaskId("k-1");
+        .setKapacitorTaskId("k-1");
     when(eventEngineTaskRepository.findById(any()))
         .thenReturn(Optional.of(
             eventEngineTask
@@ -355,7 +355,7 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, taskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }

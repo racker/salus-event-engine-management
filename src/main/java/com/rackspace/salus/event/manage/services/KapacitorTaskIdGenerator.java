@@ -16,22 +16,21 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import com.rackspace.salus.event.common.Tags;
 import java.util.UUID;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TaskIdGenerator {
+public class KapacitorTaskIdGenerator {
 
   @Data
-  public static class TaskId {
+  public static class KapacitorTaskId {
     UUID baseId;
     String kapacitorTaskId;
   }
 
-  public TaskId generateTaskId(String tenantId, String collectionName) {
-    final TaskId taskId = new TaskId()
+  public KapacitorTaskId generateTaskId(String tenantId, String collectionName) {
+    final KapacitorTaskId taskId = new KapacitorTaskId()
         .setBaseId(UUID.randomUUID());
     taskId.setKapacitorTaskId(String.format("%s-%s-%s",
         tenantId, collectionName, taskId.getBaseId().toString()
