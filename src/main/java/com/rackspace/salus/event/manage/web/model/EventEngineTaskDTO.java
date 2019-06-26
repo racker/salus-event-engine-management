@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model;
+package com.rackspace.salus.event.manage.web.model;
 
+
+import com.fasterxml.jackson.annotation.JsonView;
+import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.telemetry.model.View;
 import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class CreateTaskResponse {
+public class EventEngineTaskDTO {
   UUID id;
+
+  @JsonView(View.Admin.class)
   String tenantId;
-  String measurement;
+
   String name;
+  String measurement;
+  String taskId;
   TaskParameters taskParameters;
+  String createdTimestamp;
+  String updatedTimestamp;
 }

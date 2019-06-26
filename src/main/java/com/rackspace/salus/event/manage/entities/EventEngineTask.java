@@ -16,13 +16,12 @@
 
 package com.rackspace.salus.event.manage.entities;
 
-import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
+import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.model.TaskParameters;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.UUID;
 import javax.persistence.*;
 

@@ -185,7 +185,7 @@
               <springmvc>true</springmvc>
               <locations>
                 <location>com.rackspace.salus.event.manage.model</location>
-                <location>com.rackspace.salus.event.manage.web.TasksApi</location>
+                <location>com.rackspace.salus.event.manage.web.controller.TasksApiController</location>
               </locations>
               <templatePath>${basedir}/templates/strapdown.html.hbs</templatePath>
               <schemes>

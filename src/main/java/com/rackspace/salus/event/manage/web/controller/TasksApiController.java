@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.web;
+package com.rackspace.salus.event.manage.web.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.manage.entities.EventEngineTask;
 import com.rackspace.salus.event.manage.model.CreateTask;
-import com.rackspace.salus.event.manage.model.CreateTaskResponse;
-import com.rackspace.salus.event.manage.model.EventEngineTaskDTO;
+import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.telemetry.model.PagedContent;
 import com.rackspace.salus.telemetry.model.View;
@@ -30,6 +29,7 @@ import java.util.UUID;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -50,26 +51,27 @@ import org.springframework.web.bind.annotation.RestController;
                         @AuthorizationScope(scope = "delete:monitor", description = "delete your Monitors")
                 })
 })
-public class TasksApi {
+public class TasksApiController {
 
   private final TasksService tasksService;
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public TasksApi(TasksService tasksService, ObjectMapper objectMapper) {
+  public TasksApiController(TasksService tasksService, ObjectMapper objectMapper) {
     this.tasksService = tasksService;
     this.objectMapper = objectMapper;
   }
 
   @PostMapping("/tenant/{tenantId}/tasks")
+  @ResponseStatus(HttpStatus.CREATED)
   @ApiOperation(value = "Creates Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
   @JsonView(View.Public.class)
-  public CreateTaskResponse createTask(@PathVariable String tenantId,
+  public EventEngineTaskDTO createTask(@PathVariable String tenantId,
                                        @RequestBody @Validated CreateTask task) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
-    return objectMapper.convertValue(eventEngineTask, CreateTaskResponse.class);
+    return eventEngineTask.toDTO();
   }
 
   @GetMapping("/tenant/{tenantId}/tasks")
@@ -83,6 +85,7 @@ public class TasksApi {
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   @ApiOperation(value = "Deletes Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
   @JsonView(View.Public.class)
