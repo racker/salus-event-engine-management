@@ -49,7 +49,7 @@ public class TickScriptBuilder {
   private final Template taskTemplate;
 
   @Autowired
-  public TickScriptBuilder(TaskIdGenerator taskIdGenerator,
+  public TickScriptBuilder(KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
                            @Value("classpath:templates/task.mustache") Resource taskTemplateResource)
       throws IOException {
 
