@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage;
 
+import com.rackspace.salus.common.util.DumpConfigProperties;
 import com.rackspace.salus.common.web.ExtendedErrorAttributesConfig;
 import com.rackspace.salus.event.discovery.DiscoveryServiceModule;
 import org.springframework.boot.SpringApplication;
@@ -30,6 +31,8 @@ import org.springframework.context.annotation.Import;
 public class EventEngineManageApplication {
 
   public static void main(String[] args) {
+    DumpConfigProperties.process(args);
+
     SpringApplication.run(EventEngineManageApplication.class, args);
   }
 }
