@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: salus-event-engine-management
   jackson:
     mapper:
       default-view-inclusion: true

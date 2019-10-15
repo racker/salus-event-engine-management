@@ -35,7 +35,7 @@
     <port>${SALUS_FLUENTD_PORT}</port>
 
     <encoder>
-      <pattern><![CDATA[%date{HH:mm:ss.SSS} [%thread] %-5level %logger{15}#%line %msg]]></pattern>
+      <pattern>${FILE_LOG_PATTERN}</pattern>
     </encoder>
   </appender>
 
