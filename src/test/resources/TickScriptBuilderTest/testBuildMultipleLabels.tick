@@ -3,9 +3,9 @@ stream
     .measurement('measurement')
     .groupBy('system_resource_id')
   |where(lambda:
-    if(isPresent("resource_metadata_env"), "resource_metadata_env" == 'prod', FALSE)
+    isPresent("resource_metadata_env") AND ("resource_metadata_env" == 'prod')
       AND
-    if(isPresent("resource_metadata_os"), "resource_metadata_os" == 'linux', FALSE)
+    isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
       )
   |stateDuration(lambda: "field" > 33)
     .unit(1m)
