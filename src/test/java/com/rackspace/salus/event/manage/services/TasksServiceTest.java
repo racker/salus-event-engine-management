@@ -34,12 +34,12 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.model.CreateTask;
-import com.rackspace.salus.event.manage.repositories.EventEngineTaskRepository;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
