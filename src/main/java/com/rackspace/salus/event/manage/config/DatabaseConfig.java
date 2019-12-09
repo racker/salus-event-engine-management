@@ -14,26 +14,13 @@
  * limitations under the License.
  */
 
+package com.rackspace.salus.event.manage.config;
 
-package com.rackspace.salus.event.manage.types;
+import com.rackspace.salus.telemetry.EnableSalusJpa;
+import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
+@EnableSalusJpa
+@Configuration
+public class DatabaseConfig {
 
-public enum Comparator  {
-
-  GREATER_THAN,
-  GREATER_THAN_OR_EQUAL_TO,
-  LESS_THAN,
-  LESS_THAN_OR_EQUAL_TO;
-
-  static private HashMap<String, Comparator> convertString = new HashMap<>();
-  static {
-      convertString.put(">", GREATER_THAN);
-      convertString.put("<", LESS_THAN);
-      convertString.put(">=", GREATER_THAN_OR_EQUAL_TO);
-      convertString.put("<=", LESS_THAN_OR_EQUAL_TO);
-  }
-  static public boolean valid(String c) {
-      return (convertString.get(c) != null);
-  }
 }

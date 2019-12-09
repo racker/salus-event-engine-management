@@ -56,11 +56,6 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.vladmihalcea</groupId>
-      <artifactId>hibernate-types-52</artifactId>
-      <version>2.4.1</version>
-    </dependency>
 
     <dependency>
       <groupId>com.samskivert</groupId>

@@ -16,7 +16,7 @@
 
 package com.rackspace.salus.event.manage.repositories;
 
-import com.rackspace.salus.event.manage.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

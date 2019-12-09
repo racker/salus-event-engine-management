@@ -3,6 +3,7 @@ package com.rackspace.salus.event.manage.model;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import java.util.Collections;
 import java.util.Set;
 import javax.validation.ConstraintViolation;

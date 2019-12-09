@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.model;
 
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -32,5 +33,5 @@ public class CreateTask {
   String measurement;
 
   @NotNull @Valid
-  TaskParameters taskParameters;
+  EventEngineTaskParameters taskParameters;
 }

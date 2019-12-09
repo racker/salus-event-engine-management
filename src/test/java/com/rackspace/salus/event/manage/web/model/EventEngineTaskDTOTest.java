@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rackspace.salus.event.manage.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.model.View;
 import org.junit.Test;
 import uk.co.jemos.podam.api.PodamFactory;
@@ -37,7 +37,7 @@ public class EventEngineTaskDTOTest {
   public void testFieldsCovered() throws Exception {
     final EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
 
-    final EventEngineTaskDTO dto = task.toDTO();
+    final EventEngineTaskDTO dto = new EventEngineTaskDTO(task);
 
     assertThat(dto.getId(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());

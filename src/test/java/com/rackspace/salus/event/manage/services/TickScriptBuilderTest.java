@@ -17,13 +17,14 @@
 package com.rackspace.salus.event.manage.services;
 
 import static com.rackspace.salus.test.JsonTestUtils.readContent;
-import com.rackspace.salus.event.manage.model.EvalExpression;
-import com.rackspace.salus.event.manage.model.Expression;
-import com.rackspace.salus.event.manage.model.TaskParameters;
-import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,7 @@ public class TickScriptBuilderTest {
             .setThreshold(33));
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
-    TaskParameters tp = new TaskParameters()
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setCritical(critExpression)
         .setLabelSelector(labelSelectors);
 
@@ -75,7 +76,7 @@ public class TickScriptBuilderTest {
             .setThreshold(33));
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
-    TaskParameters tp = new TaskParameters()
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setInfo(infoExpression)
         .setLabelSelector(labelSelectors);
 
@@ -110,7 +111,7 @@ public class TickScriptBuilderTest {
             .setThreshold(20));
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
-    TaskParameters tp = new TaskParameters()
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setCritical(critExpression)
         .setWarning(warnExpression)
         .setInfo(infoExpression)
@@ -131,7 +132,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
-    TaskParameters tp = new TaskParameters()
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setCritical(critExpression);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
@@ -152,7 +153,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
-    TaskParameters tp = new TaskParameters()
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setCritical(critExpression)
         .setLabelSelector(labelSelectors);
 
@@ -175,7 +176,7 @@ public class TickScriptBuilderTest {
     List<EvalExpression> evalExpressions = new LinkedList<>();
     evalExpressions.add(evalExpression1);
     evalExpressions.add(evalExpression2);
-    TaskParameters tp = new TaskParameters().setEvalExpressions(evalExpressions);
+    EventEngineTaskParameters tp = new EventEngineTaskParameters().setEvalExpressions(evalExpressions);
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
 
@@ -184,7 +185,7 @@ public class TickScriptBuilderTest {
   public void testWindows() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
     List<String> windowFields = Arrays.asList("field1", "field2");
-    TaskParameters tp = new TaskParameters().setWindowFields(windowFields).setWindowLength(8);
+    EventEngineTaskParameters tp = new EventEngineTaskParameters().setWindowFields(windowFields).setWindowLength(8);
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
 

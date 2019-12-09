@@ -18,15 +18,19 @@ package com.rackspace.salus.event.manage.web.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rackspace.salus.event.manage.entities.EventEngineTask;
 import com.rackspace.salus.event.manage.model.CreateTask;
-import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.event.manage.services.TasksService;
+import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.model.PagedContent;
 import com.rackspace.salus.telemetry.model.View;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Authorization;
+import io.swagger.annotations.AuthorizationScope;
 import java.util.UUID;
-
-import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -71,7 +75,7 @@ public class TasksApiController {
                                        @RequestBody @Validated CreateTask task) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
-    return eventEngineTask.toDTO();
+    return new EventEngineTaskDTO(eventEngineTask);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks")
@@ -81,7 +85,7 @@ public class TasksApiController {
 
     return PagedContent.fromPage(
         tasksService.getTasks(tenantId, pageable)
-            .map(EventEngineTask::toDTO));
+            .map(EventEngineTaskDTO::new));
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")

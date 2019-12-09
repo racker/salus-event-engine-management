@@ -3,7 +3,9 @@ package com.rackspace.salus.event.manage.model;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import java.util.Collections;
 import java.util.Set;
 import javax.validation.ConstraintViolation;
@@ -24,28 +26,28 @@ public class TaskParametersValidatorTest {
 
   @Test
   public void testValidation_normal_critical() {
-    final TaskParameters resource = new TaskParameters()
+    final EventEngineTaskParameters resource = new EventEngineTaskParameters()
         .setCritical(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)));
-    final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EventEngineTaskParameters>> results = validatorFactoryBean.validate(resource);
     assertThat(results, equalTo(Collections.emptySet()));
   }
 
   @Test
   public void testValidation_normal_warning() {
 
-    final TaskParameters resource = new TaskParameters()
+    final EventEngineTaskParameters resource = new EventEngineTaskParameters()
         .setWarning(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)));
-    final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EventEngineTaskParameters>> results = validatorFactoryBean.validate(resource);
 
     assertThat(results, equalTo(Collections.emptySet()));
   }
@@ -53,14 +55,14 @@ public class TaskParametersValidatorTest {
   @Test
   public void testValidation_normal_info() {
 
-    final TaskParameters resource = new TaskParameters()
+    final EventEngineTaskParameters resource = new EventEngineTaskParameters()
         .setInfo(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)));
-    final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EventEngineTaskParameters>> results = validatorFactoryBean.validate(resource);
 
     assertThat(results, equalTo(Collections.emptySet()));
   }
@@ -68,7 +70,7 @@ public class TaskParametersValidatorTest {
   @Test
   public void testValidation_normal_multiple() {
 
-    final TaskParameters resource = new TaskParameters()
+    final EventEngineTaskParameters resource = new EventEngineTaskParameters()
         .setInfo(new LevelExpression()
             .setConsecutiveCount(5)
             .setExpression(new Expression()
@@ -87,7 +89,7 @@ public class TaskParametersValidatorTest {
                 .setComparator(">")
                 .setField("used")
                 .setThreshold(33)));
-    final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
+    final Set<ConstraintViolation<EventEngineTaskParameters>> results = validatorFactoryBean.validate(resource);
 
     assertThat(results, equalTo(Collections.emptySet()));
   }
@@ -95,11 +97,11 @@ public class TaskParametersValidatorTest {
   @Test
   public void testValidation_Fail() {
 
-    final TaskParameters resource = new TaskParameters();
-    final Set<ConstraintViolation<TaskParameters>> results = validatorFactoryBean.validate(resource);
+    final EventEngineTaskParameters resource = new EventEngineTaskParameters();
+    final Set<ConstraintViolation<EventEngineTaskParameters>> results = validatorFactoryBean.validate(resource);
 
     assertThat(results.size(), equalTo(1));
-    final ConstraintViolation<TaskParameters> violation = results.iterator().next();
+    final ConstraintViolation<EventEngineTaskParameters> violation = results.iterator().next();
     assertThat(violation.getPropertyPath().toString(), equalTo(""));
     assertThat(violation.getMessage(), equalTo("At least one of the level expressions must be set"));
   }

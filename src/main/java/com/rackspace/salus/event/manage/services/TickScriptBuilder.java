@@ -17,10 +17,10 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.common.Tags;
-import com.rackspace.salus.event.manage.model.EvalExpression;
-import com.rackspace.salus.event.manage.model.TaskParameters;
-import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
-import com.rackspace.salus.event.manage.model.validator.EvalExpressionValidator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.validators.EvalExpressionValidator;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -60,7 +60,7 @@ public class TickScriptBuilder {
     }
   }
 
-  public String build(String tenantId, String measurement, TaskParameters taskParameters) {
+  public String build(String tenantId, String measurement, EventEngineTaskParameters taskParameters) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null)
       labelsAvailable = true;

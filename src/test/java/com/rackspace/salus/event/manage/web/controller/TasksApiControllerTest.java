@@ -36,12 +36,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
-import com.rackspace.salus.event.manage.entities.EventEngineTask;
 import com.rackspace.salus.event.manage.model.CreateTask;
-import com.rackspace.salus.event.manage.model.Expression;
-import com.rackspace.salus.event.manage.model.TaskParameters;
-import com.rackspace.salus.event.manage.model.TaskParameters.LevelExpression;
 import com.rackspace.salus.event.manage.services.TasksService;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -177,7 +177,7 @@ public class TasksApiControllerTest {
     CreateTask task = new CreateTask()
         .setMeasurement("cpu")
         .setTaskParameters(
-            new TaskParameters()
+            new EventEngineTaskParameters()
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )

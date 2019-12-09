@@ -18,12 +18,15 @@ package com.rackspace.salus.event.manage.web.model;
 
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.rackspace.salus.event.manage.model.TaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.model.View;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data
+@Data @NoArgsConstructor
 public class EventEngineTaskDTO {
   UUID id;
 
@@ -34,7 +37,18 @@ public class EventEngineTaskDTO {
   String measurement;
   @JsonView(View.Admin.class)
   String kapacitorTaskId;
-  TaskParameters taskParameters;
+  EventEngineTaskParameters taskParameters;
   String createdTimestamp;
   String updatedTimestamp;
+
+  public EventEngineTaskDTO(EventEngineTask entity) {
+    this.id = entity.getId();
+    this.tenantId = entity.getTenantId();
+    this.kapacitorTaskId = entity.getKapacitorTaskId();
+    this.name = entity.getName();
+    this.measurement = entity.getMeasurement();
+    this.taskParameters = entity.getTaskParameters();
+    this.createdTimestamp = DateTimeFormatter.ISO_INSTANT.format(entity.getCreatedTimestamp());
+    this.updatedTimestamp = DateTimeFormatter.ISO_INSTANT.format(entity.getUpdatedTimestamp());
+  }
 }
