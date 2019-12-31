@@ -19,7 +19,7 @@ package com.rackspace.salus.event.manage.services;
 import static com.rackspace.salus.test.JsonTestUtils.readContent;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -33,6 +33,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
+import com.rackspace.salus.event.manage.config.DatabaseConfig;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
@@ -43,14 +44,18 @@ import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
+import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockRestServiceServer;
+import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -62,7 +67,15 @@ import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.ResourceAccessException;
 
 @RunWith(SpringRunner.class)
-@RestClientTest(TasksService.class)
+@SpringBootTest(classes = {
+    TasksService.class,
+    DatabaseConfig.class
+})
+@AutoConfigureDataJpa
+@AutoConfigureTestDatabase
+// for mocking kapacitor interactions
+@AutoConfigureWebClient
+@AutoConfigureMockRestServiceServer
 public class TasksServiceTest {
 
   @Autowired
@@ -74,7 +87,7 @@ public class TasksServiceTest {
   @MockBean
   EventEnginePicker eventEnginePicker;
 
-  @MockBean
+  @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
 
   @MockBean
@@ -86,8 +99,10 @@ public class TasksServiceTest {
   @MockBean
   AccountQualifierService accountQualifierService;
 
-  @Captor
-  ArgumentCaptor<EventEngineTask> eventEngineTaskArgumentCaptor;
+  @After
+  public void tearDown() throws Exception {
+    eventEngineTaskRepository.deleteAll();
+  }
 
   @Test
   public void testCreate_success() throws IOException {
@@ -110,9 +125,6 @@ public class TasksServiceTest {
             new EngineInstance("host", 1000, 0),
             new EngineInstance("host", 1001, 1)
         ));
-
-    when(eventEngineTaskRepository.save(any()))
-        .then(invocationOnMock -> invocationOnMock.getArgument(0));
 
     final String requestJson = readContent("/TasksServiceTest/request.json");
 
@@ -147,13 +159,12 @@ public class TasksServiceTest {
 
     verify(eventEnginePicker).pickAll();
 
-    verify(eventEngineTaskRepository).save(eventEngineTaskArgumentCaptor.capture());
-    assertThat(eventEngineTaskArgumentCaptor.getValue().getId())
-        .isEqualTo(taskId.getBaseId());
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
+    assertThat(retrieved).isPresent();
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -202,9 +213,6 @@ public class TasksServiceTest {
             new EngineInstance("host", 1001, 1)
         ));
 
-    when(eventEngineTaskRepository.save(any()))
-        .then(invocationOnMock -> invocationOnMock.getArgument(0));
-
     final String requestJson = readContent("/TasksServiceTest/request.json");
 
     final String responseJson = readContent("/TasksServiceTest/response_success.json");
@@ -232,11 +240,9 @@ public class TasksServiceTest {
 
     // EXECUTE
 
-    try {
+    assertThatThrownBy(() -> {
       tasksService.createTask("t-1", taskIn);
-
-      fail("Should have thrown BackendException");
-    } catch (BackendException e) { }
+    }).isInstanceOf(BackendException.class);
 
     // VERIFY
 
@@ -250,22 +256,56 @@ public class TasksServiceTest {
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
+    final Iterable<EventEngineTask> retrieved = eventEngineTaskRepository.findAll();
+    assertThat(retrieved).isEmpty();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+  }
+
+  @Test
+  public void testCreate_fail_noEngineInstances() throws IOException {
+    final KapacitorTaskId taskId = new KapacitorTaskId()
+        .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+        .setKapacitorTaskId("k-1");
+    when(kapacitorTaskIdGenerator.generateTaskId(any(), any()))
+        .thenReturn(taskId
+        );
+
+    when(eventEnginePicker.pickAll())
+        .thenReturn(Collections.emptyList());
+
+    final CreateTask taskIn = buildCreateTask();
+
+    // EXECUTE
+
+    assertThatThrownBy(() -> {
+      tasksService.createTask("t-1", taskIn);
+    }).isInstanceOf(IllegalStateException.class);
+
+    // VERIFY
+
+    // DB save should have been rolled back by failed transaction
+    final Iterable<EventEngineTask> tasks = eventEngineTaskRepository.findAll();
+    assertThat(tasks).isEmpty();
+
+    verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
+
+    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+
+    verify(eventEnginePicker).pickAll();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
 
   @Test
   public void testDeleteTask_success() {
-    final UUID taskDbId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    final UUID taskDbId = UUID.randomUUID();
 
-    final EventEngineTask eventEngineTask = new EventEngineTask()
-        .setTenantId("t-1")
-        .setKapacitorTaskId("k-1");
-    when(eventEngineTaskRepository.findById(any()))
-        .thenReturn(Optional.of(
-            eventEngineTask
-        ));
+    saveTask(taskDbId);
 
     when(eventEnginePicker.pickAll())
         .thenReturn(Arrays.asList(
@@ -288,15 +328,14 @@ public class TasksServiceTest {
 
     // VERIFY
 
-    verify(eventEngineTaskRepository).findById(taskDbId);
-
-    verify(eventEngineTaskRepository).delete(eventEngineTask);
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
+    assertThat(retrieved).isEmpty();
 
     verify(eventEnginePicker).pickAll();
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
@@ -305,59 +344,82 @@ public class TasksServiceTest {
   public void testDeleteTask_missingTask() {
     final UUID taskDbId = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-    when(eventEngineTaskRepository.findById(any()))
-        .thenReturn(Optional.empty());
-
     // EXECUTE
 
-    try {
+    assertThatThrownBy(() -> {
       tasksService.deleteTask("t-1", taskDbId);
-      fail("Expected NotFoundException");
-    } catch (NotFoundException e) {
-      //expected
-    }
+    }).isInstanceOf(NotFoundException.class);
 
     // VERIFY
 
-    verify(eventEngineTaskRepository).findById(taskDbId);
-
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+  }
+
+  @Test
+  public void testDeleteTask_noEngineInstances() {
+    final UUID taskDbId = UUID.randomUUID();
+
+    saveTask(taskDbId);
+
+    when(eventEnginePicker.pickAll())
+        .thenReturn(Collections.emptyList());
+
+    // EXECUTE
+
+    assertThatThrownBy(() -> {
+      tasksService.deleteTask("t-1", taskDbId);
+    }).isInstanceOf(IllegalStateException.class);
+
+    // VERIFY
+
+    verify(eventEnginePicker).pickAll();
+
+    // DB deletion should have been rolled back with failed trasnaction
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
+    assertThat(retrieved).isPresent();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
   }
 
   @Test
   public void testDeleteTask_tenantMismatch() {
-    final UUID taskDbId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    final UUID taskDbId = UUID.randomUUID();
 
-    final EventEngineTask eventEngineTask = new EventEngineTask()
-        .setTenantId("t-someone-else")
-        .setKapacitorTaskId("k-1");
-    when(eventEngineTaskRepository.findById(any()))
-        .thenReturn(Optional.of(
-            eventEngineTask
-        ));
+    saveTask(taskDbId);
 
     // EXECUTE
 
-    try {
-      tasksService.deleteTask("t-1", taskDbId);
-      fail("Expected NotFoundException");
-    } catch (NotFoundException e) {
-      //expected
-    }
+    assertThatThrownBy(() -> {
+      tasksService.deleteTask("t-someone-else", taskDbId);
+    }).isInstanceOf(NotFoundException.class);
 
     // VERIFY
 
-    verify(eventEngineTaskRepository).findById(taskDbId);
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
+    assertThat(retrieved).isPresent();
 
     mockKapacitorServer.verify();
 
-    verifyNoMoreInteractions(eventEnginePicker, eventEngineTaskRepository, kapacitorTaskIdGenerator,
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
         tickScriptBuilder
     );
+  }
+
+  private void saveTask(UUID taskDbId) {
+    final EventEngineTask eventEngineTask = new EventEngineTask()
+        .setId(taskDbId)
+        .setName("task-1")
+        .setTenantId("t-1")
+        .setKapacitorTaskId("k-1")
+        .setMeasurement("cpu")
+        .setTaskParameters(new EventEngineTaskParameters());
+    eventEngineTaskRepository.save(eventEngineTask);
   }
 
   private ClientHttpResponse connectionRefusedCreator(ClientHttpRequest clientHttpRequest) {
@@ -369,6 +431,7 @@ public class TasksServiceTest {
 
   private static CreateTask buildCreateTask() {
     return new CreateTask()
+        .setName("task-1")
         .setMeasurement("cpu")
         .setTaskParameters(
             new EventEngineTaskParameters()

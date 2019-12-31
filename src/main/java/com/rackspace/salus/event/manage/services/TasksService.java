@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -67,6 +68,7 @@ public class TasksService {
     this.accountQualifierService = accountQualifierService;
   }
 
+  @Transactional
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
     final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
@@ -83,7 +85,12 @@ public class TasksService {
 
     final List<EngineInstance> applied = new ArrayList<>();
 
-    for (EngineInstance engineInstance : eventEnginePicker.pickAll()) {
+    final Collection<EngineInstance> engineInstances = eventEnginePicker.pickAll();
+    if (engineInstances.isEmpty()) {
+      throw new IllegalStateException("No event engine instances are available");
+    }
+
+    for (EngineInstance engineInstance : engineInstances) {
       log.debug("Sending task={} to kapacitor={}", taskId, engineInstance);
 
       final ResponseEntity<Task> response;
@@ -146,6 +153,7 @@ public class TasksService {
     return eventEngineTaskRepository.findByTenantId(tenantId, page);
   }
 
+  @Transactional
   public void deleteTask(String tenantId, UUID taskDbId) {
 
     final EventEngineTask eventEngineTask = eventEngineTaskRepository.findById(taskDbId)
@@ -157,13 +165,17 @@ public class TasksService {
       throw new NotFoundException("Unable to find the requested event engine task");
     }
 
-    eventEngineTaskRepository.delete(eventEngineTask);
-
     deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll());
+
+    eventEngineTaskRepository.delete(eventEngineTask);
   }
 
   private void deleteTaskFromKapacitors(String kapacitorTaskId,
                                         Collection<EngineInstance> engineInstances) {
+    if (engineInstances.isEmpty()) {
+      throw new IllegalStateException("No event engine instances are available");
+    }
+
     for (EngineInstance engineInstance : engineInstances) {
       log.debug("Deleting kapacitorTask={} from instance={}", kapacitorTaskId, engineInstance);
       try {
