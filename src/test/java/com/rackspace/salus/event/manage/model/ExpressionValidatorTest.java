@@ -83,6 +83,42 @@ public class ExpressionValidatorTest {
   }
 
   @Test
+  public void testValidation_notEqual() {
+
+    final Expression resource = new Expression()
+        .setComparator("!=")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_regex() {
+
+    final Expression resource = new Expression()
+        .setComparator("=~")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_notRegex() {
+
+    final Expression resource = new Expression()
+        .setComparator("!~")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
   public void testValidation_failure() {
 
     final Expression resource = new Expression()
@@ -94,7 +130,8 @@ public class ExpressionValidatorTest {
     assertThat(results.size(), equalTo(1));
     final ConstraintViolation<Expression> violation = results.iterator().next();
     assertThat(violation.getPropertyPath().toString(), equalTo("comparator"));
-    assertThat(violation.getMessage(), equalTo("Valid comparators are: ==, >, >=, <, <="));
+    assertThat(violation.getMessage(),
+        equalTo("Valid comparators are: ==, !=, >, >=, <, <=, =~, !~"));
   }
 
   @Test
@@ -109,7 +146,8 @@ public class ExpressionValidatorTest {
     assertThat(results.size(), equalTo(1));
     final ConstraintViolation<Expression> violation = results.iterator().next();
     assertThat(violation.getPropertyPath().toString(), equalTo("comparator"));
-    assertThat(violation.getMessage(), equalTo("Valid comparators are: ==, >, >=, <, <="));
+    assertThat(violation.getMessage(),
+        equalTo("Valid comparators are: ==, !=, >, >=, <, <=, =~, !~"));
   }
 
 }
