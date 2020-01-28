@@ -23,10 +23,58 @@ public class ExpressionValidatorTest {
 
 
   @Test
-  public void testValidation_normal() {
+  public void testValidation_equals() {
+
+    final Expression resource = new Expression()
+        .setComparator("==")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_greaterEquals() {
+
+    final Expression resource = new Expression()
+        .setComparator(">=")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_lessEquals() {
+
+    final Expression resource = new Expression()
+        .setComparator("<=")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_greater() {
 
     final Expression resource = new Expression()
         .setComparator(">")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results, equalTo(Collections.emptySet()));
+  }
+
+  @Test
+  public void testValidation_less() {
+
+    final Expression resource = new Expression()
+        .setComparator("<")
         .setField("used")
         .setThreshold(33);
     final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
@@ -46,7 +94,22 @@ public class ExpressionValidatorTest {
     assertThat(results.size(), equalTo(1));
     final ConstraintViolation<Expression> violation = results.iterator().next();
     assertThat(violation.getPropertyPath().toString(), equalTo("comparator"));
-    assertThat(violation.getMessage(), equalTo("Valid comparators are: >, >=, <, <="));
+    assertThat(violation.getMessage(), equalTo("Valid comparators are: ==, >, >=, <, <="));
+  }
+
+  @Test
+  public void testValidation_failure2() {
+
+    final Expression resource = new Expression()
+        .setComparator("=")
+        .setField("used")
+        .setThreshold(33);
+    final Set<ConstraintViolation<Expression>> results = validatorFactoryBean.validate(resource);
+
+    assertThat(results.size(), equalTo(1));
+    final ConstraintViolation<Expression> violation = results.iterator().next();
+    assertThat(violation.getPropertyPath().toString(), equalTo("comparator"));
+    assertThat(violation.getMessage(), equalTo("Valid comparators are: ==, >, >=, <, <="));
   }
 
 }
