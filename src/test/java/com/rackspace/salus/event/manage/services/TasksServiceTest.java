@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
+import com.rackspace.salus.test.EnableTestContainersDatabase;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -51,7 +52,6 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockRestServiceServer;
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
@@ -72,7 +72,7 @@ import org.springframework.web.client.ResourceAccessException;
     DatabaseConfig.class
 })
 @AutoConfigureDataJpa
-@AutoConfigureTestDatabase
+@EnableTestContainersDatabase
 // for mocking kapacitor interactions
 @AutoConfigureWebClient
 @AutoConfigureMockRestServiceServer
