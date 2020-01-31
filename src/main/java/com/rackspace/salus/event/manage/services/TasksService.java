@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class TasksService {
       } catch (RestClientException e) {
 
         // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied);
+        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, true);
         throw new BackendException(null,
             String.format("HTTP error while creating task=%s on instance=%s: %s", task, engineInstance, e.getMessage())
         );
@@ -112,7 +112,7 @@ public class TasksService {
       if (response.getStatusCode().isError()) {
         String details = response.getBody() != null ? response.getBody().getError() : "";
         // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied);
+        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
         throw new BackendException(response,
             String.format("HTTP error while creating task=%s on instance=%s: %s", task, engineInstance, details)
         );
@@ -121,7 +121,7 @@ public class TasksService {
       final Task respTask = response.getBody();
       if (respTask == null) {
         // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied);
+        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
         throw new BackendException(null,
             String.format("Empty engine response while creating task=%s on instance=%s", task, engineInstance)
         );
@@ -129,7 +129,7 @@ public class TasksService {
 
       if (StringUtils.hasText(respTask.getError())) {
         // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied);
+        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
         throw new BackendException(response,
             String.format("Engine error while creating task=%s on instance=%s: %s", task, engineInstance, respTask.getError())
         );
@@ -165,14 +165,16 @@ public class TasksService {
       throw new NotFoundException("Unable to find the requested event engine task");
     }
 
-    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll());
+    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
+        false);
 
     eventEngineTaskRepository.delete(eventEngineTask);
   }
 
   private void deleteTaskFromKapacitors(String kapacitorTaskId,
-                                        Collection<EngineInstance> engineInstances) {
-    if (engineInstances.isEmpty()) {
+                                        Collection<EngineInstance> engineInstances,
+                                        boolean rollback) {
+    if (!rollback && engineInstances.isEmpty()) {
       throw new IllegalStateException("No event engine instances are available");
     }
 

@@ -302,6 +302,76 @@ public class TasksServiceTest {
   }
 
   @Test
+  public void testCreate_fail_firstInstance() throws IOException {
+    /*
+    The first engine instance failing is a special case since the rollback-deletion used to have
+    a bug where it thought no instances were available since there were none to rollback. That
+    in turn would throw an exception that masked the original creation failure.
+     */
+
+    final KapacitorTaskId taskId = new KapacitorTaskId()
+        .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+        .setKapacitorTaskId("k-1");
+    when(kapacitorTaskIdGenerator.generateTaskId(any(), any()))
+        .thenReturn(taskId
+        );
+
+    when(tickScriptBuilder.build(any(), any(), any()))
+        .thenReturn("built script");
+
+    when(accountQualifierService.convertFromTenant(any()))
+        .then(invocationOnMock -> "TYPE:" + invocationOnMock.getArgument(0));
+
+    when(eventEnginePicker.pickAll())
+        .thenReturn(Arrays.asList(
+            new EngineInstance("host", 1000, 0),
+            new EngineInstance("host", 1001, 1)
+        ));
+
+    final String requestJson = readContent("/TasksServiceTest/request.json");
+
+    final String responseJson = readContent("/TasksServiceTest/response_success.json");
+
+    // simulate bad request on first instance attempted
+    mockKapacitorServer
+        .expect(requestTo("http://host:1000/kapacitor/v1/tasks"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(content().json(requestJson))
+        .andRespond(withBadRequest());
+
+    final CreateTask taskIn = buildCreateTask();
+
+    // EXECUTE
+
+    assertThatThrownBy(() -> {
+      tasksService.createTask("t-1", taskIn);
+    })
+        .isInstanceOf(BackendException.class)
+        .hasMessageContaining("HTTP error while creating task")
+        .hasMessageContaining("400 Bad Request");
+
+    // VERIFY
+
+    verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
+
+    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+
+    verify(accountQualifierService).convertFromTenant("t-1");
+
+    verify(eventEnginePicker).pickAll();
+
+    mockKapacitorServer.verify();
+
+    final Iterable<EventEngineTask> retrieved = eventEngineTaskRepository.findAll();
+    assertThat(retrieved).isEmpty();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+
+  }
+
+  @Test
   public void testDeleteTask_success() {
     final UUID taskDbId = UUID.randomUUID();
 
