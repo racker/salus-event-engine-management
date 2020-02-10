@@ -20,7 +20,7 @@ package com.rackspace.salus.event.manage.web.model;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.model.View;
+import com.rackspace.salus.common.web.View;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.Data;

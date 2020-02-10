@@ -45,6 +45,10 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.cloud</groupId>
       <artifactId>spring-cloud-starter-sleuth</artifactId>
     </dependency>
@@ -75,20 +79,6 @@
       <groupId>com.rackspace.salus</groupId>
       <artifactId>salus-common</artifactId>
       <version>0.1.0-SNAPSHOT</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>spring-boot-starter-security</artifactId>
-          <groupId>org.springframework.boot</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>spring-boot-starter-web</artifactId>
-          <groupId>org.springframework.boot</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jetcd-core</artifactId>
-          <groupId>com.coreos</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

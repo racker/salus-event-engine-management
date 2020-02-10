@@ -2,12 +2,22 @@
 logging:
   level:
     com.rackspace.salus.event.manage: debug
-salus.event:
-  discovery:
-    port-strategy:
-      host: localhost
-      starting-port: 9192
-      partitions: 2
+salus:
+  event:
+    discovery:
+      port-strategy:
+        host: localhost
+        starting-port: 9192
+        partitions: 2
+  common:
+    roles:
+      role-to-view:
+        # An anonymous role is used for unauthenticated requests.
+        # i.e. internal service-to-service requests.
+        ROLE_ANONYMOUS: ADMIN
+        ROLE_CUSTOMER: PUBLIC
+        ROLE_EMPLOYEE: INTERNAL
+        ROLE_ENGINEER: ADMIN
 server:
   port: 8087
 spring:

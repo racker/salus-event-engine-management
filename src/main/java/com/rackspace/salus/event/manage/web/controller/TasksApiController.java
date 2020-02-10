@@ -23,7 +23,7 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.model.PagedContent;
-import com.rackspace.salus.telemetry.model.View;
+import com.rackspace.salus.common.web.View;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -70,7 +70,6 @@ public class TasksApiController {
   @ResponseStatus(HttpStatus.CREATED)
   @ApiOperation(value = "Creates Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
-  @JsonView(View.Public.class)
   public EventEngineTaskDTO createTask(@PathVariable String tenantId,
                                        @RequestBody @Validated CreateTask task) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
@@ -80,7 +79,6 @@ public class TasksApiController {
 
   @GetMapping("/tenant/{tenantId}/tasks")
   @ApiOperation(value = "Gets all Tasks for the specific Tenant")
-  @JsonView(View.Public.class)
   public PagedContent<EventEngineTaskDTO> getTasks(@PathVariable String tenantId, Pageable pageable) {
 
     return PagedContent.fromPage(
@@ -92,7 +90,6 @@ public class TasksApiController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @ApiOperation(value = "Deletes Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
-  @JsonView(View.Public.class)
   public void deleteTask(@PathVariable String tenantId,
                          @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);
