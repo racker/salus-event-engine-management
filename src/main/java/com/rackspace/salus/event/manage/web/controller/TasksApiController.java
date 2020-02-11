@@ -16,14 +16,12 @@
 
 package com.rackspace.salus.event.manage.web.controller;
 
-import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.model.PagedContent;
-import com.rackspace.salus.common.web.View;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
