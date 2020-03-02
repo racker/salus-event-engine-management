@@ -49,6 +49,10 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
 
+  Pattern validRealNumber = Pattern.compile("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$");
+
+  Pattern evalExpression = Pattern.compile(EvalExpressionValidator.functionRegex);
+
   @Autowired
   public TickScriptBuilder(KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
                            @Value("classpath:templates/task.mustache") Resource taskTemplateResource)
@@ -108,16 +112,12 @@ public class TickScriptBuilder {
         null;
   }
 
-  private Boolean isValidRealNumber(String operand) {
-    return Pattern.matches("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$", operand);
-  }
-
   private String normalize(String operand) {
-    if (isValidRealNumber(operand)) {
+    if (validRealNumber.matcher(operand).matches()) {
       return operand;
     }
 
-    Matcher matcher = Pattern.compile(EvalExpressionValidator.functionRegex).matcher(operand);
+    Matcher matcher = evalExpression.matcher(operand);
 
     //  if operand is not a function call, double quote it
     if (!matcher.matches()) {
@@ -128,7 +128,7 @@ public class TickScriptBuilder {
     // Operand is function call, so split out the function parameters, double quoting the tag/fields
     String parameters = Arrays.stream(matcher.group(2).split(","))
         .map(String::trim)
-        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
+        .map(p -> validRealNumber.matcher(p).matches() ? p : "\"" + p + "\"")
         .collect(Collectors.joining(", "));
 
     return matcher.group(1) + "(" + parameters + ")";
