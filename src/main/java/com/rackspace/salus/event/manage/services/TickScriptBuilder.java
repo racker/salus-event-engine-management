@@ -28,6 +28,7 @@ import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,10 +63,15 @@ public class TickScriptBuilder {
 
   public String build(String tenantId, String measurement, EventEngineTaskParameters taskParameters) {
     boolean labelsAvailable = false;
-    if(taskParameters.getLabelSelector() != null)
+    if(taskParameters.getLabelSelector() != null && !taskParameters.getLabelSelector().isEmpty()) {
       labelsAvailable = true;
+
+    }else {
+      taskParameters.setLabelSelector(Collections.EMPTY_MAP);
+    }
+
     return taskTemplate.execute(TaskContext.builder()
-        .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
+        .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(String.join(":",
             "{{ .TaskName }}",
             "{{ .Group }}"

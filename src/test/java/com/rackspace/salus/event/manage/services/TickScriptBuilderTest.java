@@ -179,13 +179,33 @@ public class TickScriptBuilderTest {
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setEvalExpressions(evalExpressions);
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
-
   }
+
   @Test
   public void testWindows() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
     List<String> windowFields = Arrays.asList("field1", "field2");
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setWindowFields(windowFields).setWindowLength(8);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+  }
+
+  @Test
+  public void testDefaultConsecutiveCount() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testDefaultConsecutiveCount.tick");
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    labelSelectors.put("resource_metadata_env", "prod");
+
+    LevelExpression critExpression = new LevelExpression();
+    critExpression.setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setCritical(critExpression)
+        .setLabelSelector(labelSelectors);
+
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
 

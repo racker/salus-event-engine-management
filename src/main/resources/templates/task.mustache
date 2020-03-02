@@ -51,15 +51,15 @@ stream
     .stateChangesOnly()
     .id('{{alertId}}')
     .details('{{details}}')
-{{#infoCount}}
+{{#infoExpression}}
     .info(lambda: {{infoCount}})
-{{/infoCount}}
-{{#warnCount}}
+{{/infoExpression}}
+{{#warnExpression}}
     .warn(lambda: {{warnCount}})
-{{/warnCount}}
-{{#critCount}}
+{{/warnExpression}}
+{{#critExpression}}
     .crit(lambda: {{critCount}})
-{{/critCount}}
+{{/critExpression}}
 {{#flapping}}
     .flapping({{flappingLower}}, {{flappingUpper}})
 {{/flapping}}
