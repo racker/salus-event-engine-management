@@ -70,7 +70,7 @@ public class TickScriptBuilder {
     if(taskParameters.getLabelSelector() != null && !taskParameters.getLabelSelector().isEmpty()) {
       labelsAvailable = true;
 
-    }else {
+    } else {
       taskParameters.setLabelSelector(Collections.EMPTY_MAP);
     }
 
@@ -108,12 +108,16 @@ public class TickScriptBuilder {
   }
 
   public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
-    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getConsecutiveCount()) :
+    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getStateDuration()) :
         null;
   }
 
+  private boolean isValidRealNumber(String operand) {
+    return validRealNumber.matcher(operand).matches();
+  }
+
   private String normalize(String operand) {
-    if (validRealNumber.matcher(operand).matches()) {
+    if (isValidRealNumber(operand)) {
       return operand;
     }
 
@@ -128,7 +132,7 @@ public class TickScriptBuilder {
     // Operand is function call, so split out the function parameters, double quoting the tag/fields
     String parameters = Arrays.stream(matcher.group(2).split(","))
         .map(String::trim)
-        .map(p -> validRealNumber.matcher(p).matches() ? p : "\"" + p + "\"")
+        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
         .collect(Collectors.joining(", "));
 
     return matcher.group(1) + "(" + parameters + ")";

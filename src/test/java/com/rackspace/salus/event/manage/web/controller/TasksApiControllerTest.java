@@ -183,7 +183,7 @@ public class TasksApiControllerTest {
                 )
                 .setCritical(
                     new LevelExpression()
-                        .setConsecutiveCount(1)
+                        .setStateDuration(1)
                         .setExpression(
                             new Expression()
                                 .setField("usage_user")
