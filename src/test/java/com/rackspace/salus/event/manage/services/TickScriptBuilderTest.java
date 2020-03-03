@@ -209,8 +209,8 @@ public class TickScriptBuilderTest {
   }
 
   @Test
-  public void testDefaultConsecutiveCount() throws IOException {
-    String expectedString = readContent("/TickScriptBuilderTest/testDefaultConsecutiveCount.tick");
+  public void testNullConsecutiveCount() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testNullConsecutiveCount.tick");
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
