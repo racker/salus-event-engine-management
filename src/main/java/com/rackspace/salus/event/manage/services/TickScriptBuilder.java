@@ -107,8 +107,8 @@ public class TickScriptBuilder {
         null;
   }
 
-  public String buildTICKExpression(LevelExpression stateDuration, String formatString) {
-    return stateDuration != null && stateDuration.getStateDuration() != null ? String.format(formatString, stateDuration.getStateDuration()) :
+  public String buildTICKExpression(LevelExpression levelExpression, String formatString) {
+    return levelExpression != null && levelExpression.getStateDuration() != null ? String.format(formatString, levelExpression.getStateDuration()) :
         null;
   }
 
