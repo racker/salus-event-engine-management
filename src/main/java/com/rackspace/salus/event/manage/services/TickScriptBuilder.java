@@ -107,8 +107,8 @@ public class TickScriptBuilder {
         null;
   }
 
-  public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
-    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getStateDuration()) :
+  public String buildTICKExpression(LevelExpression stateDuration, String formatString) {
+    return stateDuration != null && stateDuration.getStateDuration() != null ? String.format(formatString, stateDuration.getStateDuration()) :
         null;
   }
 

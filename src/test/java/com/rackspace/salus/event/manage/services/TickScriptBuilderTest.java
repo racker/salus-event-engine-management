@@ -220,6 +220,7 @@ public class TickScriptBuilderTest {
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
+            //.setStateDuration(null);
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
         .setCritical(critExpression)
         .setLabelSelector(labelSelectors);
