@@ -24,6 +24,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expressi
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,7 +49,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
 
     LevelExpression critExpression = new LevelExpression();
-    critExpression.setConsecutiveCount(5)
+    critExpression.setStateDuration(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
@@ -69,7 +70,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
 
     LevelExpression infoExpression = new LevelExpression();
-    infoExpression.setConsecutiveCount(5)
+    infoExpression.setStateDuration(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
@@ -90,21 +91,21 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
 
     LevelExpression critExpression = new LevelExpression();
-    critExpression.setConsecutiveCount(5)
+    critExpression.setStateDuration(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
 
     LevelExpression warnExpression = new LevelExpression();
-    warnExpression.setConsecutiveCount(3)
+    warnExpression.setStateDuration(3)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
             .setThreshold(33));
 
     LevelExpression infoExpression = new LevelExpression();
-    infoExpression.setConsecutiveCount(1)
+    infoExpression.setStateDuration(1)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
@@ -127,7 +128,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
     LevelExpression critExpression = new LevelExpression();
-    critExpression.setConsecutiveCount(5)
+    critExpression.setStateDuration(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
@@ -137,7 +138,24 @@ public class TickScriptBuilderTest {
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
+  }
 
+  @Test
+  public void testBuildEmptySetOfLabels() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
+
+    LevelExpression critExpression = new LevelExpression();
+    critExpression.setStateDuration(5)
+        .setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33));
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setCritical(critExpression)
+        .setLabelSelector(Collections.EMPTY_MAP);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
   }
 
   @Test
@@ -148,7 +166,7 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_env", "prod");
 
     LevelExpression critExpression = new LevelExpression();
-    critExpression.setConsecutiveCount(5)
+    critExpression.setStateDuration(5)
         .setExpression(new Expression()
             .setComparator(">")
             .setField("field")
@@ -179,13 +197,34 @@ public class TickScriptBuilderTest {
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setEvalExpressions(evalExpressions);
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
-
   }
+
   @Test
   public void testWindows() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
     List<String> windowFields = Arrays.asList("field1", "field2");
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setWindowFields(windowFields).setWindowLength(8);
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+  }
+
+  @Test
+  public void testNullConsecutiveCount() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testNullConsecutiveCount.tick");
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    labelSelectors.put("resource_metadata_env", "prod");
+
+    LevelExpression critExpression = new LevelExpression();
+    critExpression.setExpression(new Expression()
+            .setComparator(">")
+            .setField("field")
+            .setThreshold(33))
+            .setStateDuration(null);
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setCritical(critExpression)
+        .setLabelSelector(labelSelectors);
+
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
 

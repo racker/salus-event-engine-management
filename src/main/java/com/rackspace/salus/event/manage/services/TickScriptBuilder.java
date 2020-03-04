@@ -28,6 +28,7 @@ import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +49,10 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
 
+  Pattern validRealNumber = Pattern.compile("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$");
+
+  Pattern evalExpression = Pattern.compile(EvalExpressionValidator.functionRegex);
+
   @Autowired
   public TickScriptBuilder(KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
                            @Value("classpath:templates/task.mustache") Resource taskTemplateResource)
@@ -62,10 +67,15 @@ public class TickScriptBuilder {
 
   public String build(String tenantId, String measurement, EventEngineTaskParameters taskParameters) {
     boolean labelsAvailable = false;
-    if(taskParameters.getLabelSelector() != null)
+    if(taskParameters.getLabelSelector() != null && !taskParameters.getLabelSelector().isEmpty()) {
       labelsAvailable = true;
+
+    } else {
+      taskParameters.setLabelSelector(Collections.EMPTY_MAP);
+    }
+
     return taskTemplate.execute(TaskContext.builder()
-        .labels(taskParameters.getLabelSelector() != null ? taskParameters.getLabelSelector().entrySet() : null)
+        .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(String.join(":",
             "{{ .TaskName }}",
             "{{ .Group }}"
@@ -97,13 +107,13 @@ public class TickScriptBuilder {
         null;
   }
 
-  public String buildTICKExpression(LevelExpression consecutiveCount, String formatString) {
-    return consecutiveCount != null ? String.format(formatString, consecutiveCount.getConsecutiveCount()) :
+  public String buildTICKExpression(LevelExpression levelExpression, String formatString) {
+    return levelExpression != null && levelExpression.getStateDuration() != null ? String.format(formatString, levelExpression.getStateDuration()) :
         null;
   }
 
-  private Boolean isValidRealNumber(String operand) {
-    return Pattern.matches("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$", operand);
+  private boolean isValidRealNumber(String operand) {
+    return validRealNumber.matcher(operand).matches();
   }
 
   private String normalize(String operand) {
@@ -111,7 +121,7 @@ public class TickScriptBuilder {
       return operand;
     }
 
-    Matcher matcher = Pattern.compile(EvalExpressionValidator.functionRegex).matcher(operand);
+    Matcher matcher = evalExpression.matcher(operand);
 
     //  if operand is not a function call, double quote it
     if (!matcher.matches()) {

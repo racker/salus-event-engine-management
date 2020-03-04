@@ -1,0 +1,16 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id')
+  |where(lambda:
+    isPresent("resource_metadata_env") AND ("resource_metadata_env" == 'prod')
+      AND
+    isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
+      )
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .details('task={{.TaskName}}')
+    .crit(lambda: "field" > 33)
+    .history(21)
+    .topic('events')

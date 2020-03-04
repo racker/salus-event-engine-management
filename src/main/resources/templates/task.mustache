@@ -32,21 +32,27 @@ stream
     .as({{joinedAs}})
     .keep()
 {{/joinedEvals}}
-{{#critExpression}}
+{{#critCount}}
+  {{#critExpression}}
   |stateDuration(lambda: {{critExpression}})
     .unit(1m)
     .as('crit_count')
-{{/critExpression}}
-{{#warnExpression}}
+  {{/critExpression}}
+{{/critCount}}
+{{#warnCount}}
+  {{#warnExpression}}
   |stateDuration(lambda: {{warnExpression}})
     .unit(1m)
     .as('warn_count')
-{{/warnExpression}}
-{{#infoExpression}}
+  {{/warnExpression}}
+{{/warnCount}}
+{{#infoCount}}
+  {{#infoExpression}}
   |stateDuration(lambda: {{infoExpression}})
     .unit(1m)
     .as('info_count')
-{{/infoExpression}}
+  {{/infoExpression}}
+{{/infoCount}}
   |alert()
     .stateChangesOnly()
     .id('{{alertId}}')
@@ -54,11 +60,26 @@ stream
 {{#infoCount}}
     .info(lambda: {{infoCount}})
 {{/infoCount}}
+{{^infoCount}}
+  {{#infoExpression}}
+    .info(lambda: {{infoExpression}})
+  {{/infoExpression}}
+{{/infoCount}}
 {{#warnCount}}
     .warn(lambda: {{warnCount}})
 {{/warnCount}}
+{{^warnCount}}
+  {{#warnExpression}}
+    .warn(lambda: {{warnExpression}})
+  {{/warnExpression}}
+{{/warnCount}}
 {{#critCount}}
     .crit(lambda: {{critCount}})
+{{/critCount}}
+{{^critCount}}
+  {{#critExpression}}
+    .crit(lambda: {{critExpression}})
+  {{/critExpression}}
 {{/critCount}}
 {{#flapping}}
     .flapping({{flappingLower}}, {{flappingUpper}})
