@@ -16,10 +16,12 @@
 
 package com.rackspace.salus.event.manage;
 
+import com.rackspace.salus.common.config.AutoConfigureSalusAppMetrics;
 import com.rackspace.salus.common.util.DumpConfigProperties;
 import com.rackspace.salus.common.web.EnableExtendedErrorAttributes;
 import com.rackspace.salus.common.web.EnableRoleBasedJsonViews;
 import com.rackspace.salus.event.discovery.DiscoveryServiceModule;
+import com.rackspace.salus.telemetry.web.EnableTenantVerification;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
@@ -27,6 +29,8 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @EnableRoleBasedJsonViews
 @EnableExtendedErrorAttributes
+@EnableTenantVerification
+@AutoConfigureSalusAppMetrics
 @Import(DiscoveryServiceModule.class)
 public class EventEngineManageApplication {
 

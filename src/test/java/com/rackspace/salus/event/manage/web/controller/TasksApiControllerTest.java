@@ -18,6 +18,7 @@ package com.rackspace.salus.event.manage.web.controller;
 
 import static com.rackspace.salus.test.WebTestUtils.validationError;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +43,8 @@ import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
+import com.rackspace.salus.telemetry.web.TenantVerification;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,8 +79,46 @@ public class TasksApiControllerTest {
   @MockBean
   EventEnginePicker eventEnginePicker;
 
+  @MockBean
+  TenantMetadataRepository tenantMetadataRepository;
+
   @Autowired
   ObjectMapper objectMapper;
+
+  @Test
+  public void testTenantVerification_Success() throws Exception {
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    doNothing().when(tasksService).deleteTask(anyString(), any());
+    when(tenantMetadataRepository.existsByTenantId(tenantId))
+        .thenReturn(true);
+
+    mockMvc.perform(delete("/api/tenant/{tenantId}/tasks/{name}", tenantId, UUID.randomUUID())
+        // header must be set to trigger tenant verification
+        .header(TenantVerification.HEADER_TENANT, tenantId))
+        .andExpect(status().isNoContent());
+
+    verify(tenantMetadataRepository).existsByTenantId(tenantId);
+  }
+
+  @Test
+  public void testTenantVerification_Fail() throws Exception {
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    doNothing().when(tasksService).deleteTask(anyString(), any());
+    when(tenantMetadataRepository.existsByTenantId(tenantId))
+        .thenReturn(false);
+
+    mockMvc.perform(delete("/api/tenant/{tenantId}/tasks/{name}", tenantId, UUID.randomUUID())
+        // header must be set to trigger tenant verification
+        .header(TenantVerification.HEADER_TENANT, tenantId))
+        .andExpect(status().isNotFound())
+        .andExpect(content()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.message", is(TenantVerification.ERROR_MSG)));
+
+    verify(tenantMetadataRepository).existsByTenantId(tenantId);
+  }
 
   @Test
   public void testGetTasks() throws Exception {
