@@ -18,6 +18,7 @@ salus:
         ROLE_CUSTOMER: PUBLIC
         ROLE_EMPLOYEE: INTERNAL
         ROLE_ENGINEER: ADMIN
+        ROLE_IDENTITY_USER_ADMIN: PUBLIC
 server:
   port: 8087
 spring:
