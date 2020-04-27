@@ -53,7 +53,7 @@ steps:
       path: /root
 artifacts:
   objects:
-    location: 'gs://salus_www/agent_catalog_management/'
+    location: 'gs://salus_www/event_engine_management/'
     paths: ['target/generated/swagger/converted.html']
 
 
