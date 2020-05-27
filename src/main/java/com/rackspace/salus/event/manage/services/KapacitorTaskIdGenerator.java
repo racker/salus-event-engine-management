@@ -33,15 +33,9 @@ public class KapacitorTaskIdGenerator {
     final KapacitorTaskId taskId = new KapacitorTaskId()
         .setBaseId(UUID.randomUUID());
     taskId.setKapacitorTaskId(String.format("%s-%s-%s",
-        tenantId, collectionName, taskId.getBaseId().toString()
+        tenantId.replace(":", "_"), collectionName, taskId.getBaseId().toString()
     ));
 
     return taskId;
   }
-
-  public String pattern(String tenantId) {
-    return String.format("%s-*", tenantId);
-  }
-
-
 }
