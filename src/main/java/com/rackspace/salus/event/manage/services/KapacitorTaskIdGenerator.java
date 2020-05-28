@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class KapacitorTaskIdGenerator {
+  private static final String UNDERSCORE = "_";
+  private static final String COLON = ":";
 
   @Data
   public static class KapacitorTaskId {
@@ -33,15 +35,9 @@ public class KapacitorTaskIdGenerator {
     final KapacitorTaskId taskId = new KapacitorTaskId()
         .setBaseId(UUID.randomUUID());
     taskId.setKapacitorTaskId(String.format("%s-%s-%s",
-        tenantId, collectionName, taskId.getBaseId().toString()
+        tenantId.replace(COLON, UNDERSCORE), collectionName, taskId.getBaseId().toString()
     ));
 
     return taskId;
   }
-
-  public String pattern(String tenantId) {
-    return String.format("%s-*", tenantId);
-  }
-
-
 }
