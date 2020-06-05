@@ -53,19 +53,17 @@ public class TasksService {
   private final EventEngineTaskRepository eventEngineTaskRepository;
   private final KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
   private final TickScriptBuilder tickScriptBuilder;
-  private final AccountQualifierService accountQualifierService;
 
   @Autowired
   public TasksService(EventEnginePicker eventEnginePicker, RestTemplateBuilder restTemplateBuilder,
                       EventEngineTaskRepository eventEngineTaskRepository,
-                      KapacitorTaskIdGenerator kapacitorTaskIdGenerator, TickScriptBuilder tickScriptBuilder,
-                      AccountQualifierService accountQualifierService) {
+                      KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
+                      TickScriptBuilder tickScriptBuilder) {
     this.eventEnginePicker = eventEnginePicker;
     this.restTemplate = restTemplateBuilder.build();
     this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.kapacitorTaskIdGenerator = kapacitorTaskIdGenerator;
     this.tickScriptBuilder = tickScriptBuilder;
-    this.accountQualifierService = accountQualifierService;
   }
 
   @Transactional
@@ -76,7 +74,7 @@ public class TasksService {
         .id(taskId.getKapacitorTaskId())
         .type(Type.stream)
         .dbrps(Collections.singletonList(DbRp.builder()
-            .db(accountQualifierService.convertFromTenant(tenantId))
+            .db(tenantId)
             .rp(InfluxScope.INGEST_RETENTION_POLICY)
             .build()))
         .script(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getTaskParameters()))

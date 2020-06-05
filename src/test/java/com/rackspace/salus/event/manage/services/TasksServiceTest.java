@@ -96,9 +96,6 @@ public class TasksServiceTest {
   @MockBean
   TickScriptBuilder tickScriptBuilder;
 
-  @MockBean
-  AccountQualifierService accountQualifierService;
-
   @After
   public void tearDown() throws Exception {
     eventEngineTaskRepository.deleteAll();
@@ -116,9 +113,6 @@ public class TasksServiceTest {
 
     when(tickScriptBuilder.build(any(), any(), any()))
         .thenReturn("built script");
-
-    when(accountQualifierService.convertFromTenant(any()))
-        .then(invocationOnMock -> "TYPE:" + invocationOnMock.getArgument(0));
 
     when(eventEnginePicker.pickAll())
         .thenReturn(Arrays.asList(
@@ -154,8 +148,6 @@ public class TasksServiceTest {
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
     verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
-
-    verify(accountQualifierService).convertFromTenant("t-1");
 
     verify(eventEnginePicker).pickAll();
 
@@ -204,9 +196,6 @@ public class TasksServiceTest {
     when(tickScriptBuilder.build(any(), any(), any()))
         .thenReturn("built script");
 
-    when(accountQualifierService.convertFromTenant(any()))
-        .then(invocationOnMock -> "TYPE:" + invocationOnMock.getArgument(0));
-
     when(eventEnginePicker.pickAll())
         .thenReturn(Arrays.asList(
             new EngineInstance("host", 1000, 0),
@@ -249,8 +238,6 @@ public class TasksServiceTest {
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
     verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
-
-    verify(accountQualifierService).convertFromTenant("t-1");
 
     verify(eventEnginePicker).pickAll();
 
@@ -319,9 +306,6 @@ public class TasksServiceTest {
     when(tickScriptBuilder.build(any(), any(), any()))
         .thenReturn("built script");
 
-    when(accountQualifierService.convertFromTenant(any()))
-        .then(invocationOnMock -> "TYPE:" + invocationOnMock.getArgument(0));
-
     when(eventEnginePicker.pickAll())
         .thenReturn(Arrays.asList(
             new EngineInstance("host", 1000, 0),
@@ -355,8 +339,6 @@ public class TasksServiceTest {
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
     verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
-
-    verify(accountQualifierService).convertFromTenant("t-1");
 
     verify(eventEnginePicker).pickAll();
 

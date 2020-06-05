@@ -4,7 +4,7 @@
   "script": "built script",
   "dbrps": [
     {
-      "db": "TYPE:t-1",
+      "db": "t-1",
       "rp": "ingest"
     }
   ],
