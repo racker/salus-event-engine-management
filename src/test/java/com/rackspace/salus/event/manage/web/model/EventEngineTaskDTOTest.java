@@ -24,11 +24,25 @@ import static org.junit.Assert.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.common.web.View;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import org.junit.Test;
+import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
 
 public class EventEngineTaskDTOTest {
+
+  // Ensure Expressions have their `threshold` field populated with something (a string).
+  DefaultClassInfoStrategy classInfoStrategy;
+  {
+    try {
+      classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
+            .addExtraMethod(Expression.class, "podamHelper", String.class);
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    }
+  }
+
   final PodamFactory podamFactory = new PodamFactoryImpl();
 
   final ObjectMapper objectMapper = new ObjectMapper();
