@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Component;
 
 
 @Component
+@Slf4j
 public class TickScriptBuilder {
 
   private final Template taskTemplate;
@@ -101,10 +103,24 @@ public class TickScriptBuilder {
   }
 
   public String buildTICKExpression(LevelExpression expression) {
-    return expression != null ? String.format("\"%s\" %s %s", expression.getExpression().getField(),
-        expression.getExpression().getComparator(),
-        expression.getExpression().getThreshold()) :
-        null;
+    if (expression == null) {
+      return null;
+    }
+
+    String tickExpression = String.format("\"%s\" %s ", expression.getExpression().getField(),
+        expression.getExpression().getComparator());
+
+    Object threshold = expression.getExpression().getThreshold();
+    if (threshold instanceof Number) {
+      tickExpression += (Number) threshold;
+    } else if (threshold instanceof String) {
+      tickExpression += "\"" + (String) threshold + "\"";
+    } else {
+      log.error("Could not evaluate task threshold from {}", threshold);
+      return null;
+    }
+
+    return tickExpression;
   }
 
   public String buildTICKExpression(LevelExpression levelExpression, String formatString) {

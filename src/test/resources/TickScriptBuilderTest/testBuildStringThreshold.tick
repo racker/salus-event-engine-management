@@ -1,0 +1,17 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id')
+  |where(lambda:
+    isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
+      )
+  |stateDuration(lambda: "code" !~ "[2-4]\d\d")
+    .unit(1m)
+    .as('crit_count')
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .details('task={{.TaskName}}')
+    .crit(lambda: "crit_count" >= 3)
+    .history(21)
+    .topic('events')

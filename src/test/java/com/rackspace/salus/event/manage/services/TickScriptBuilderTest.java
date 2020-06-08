@@ -45,8 +45,8 @@ public class TickScriptBuilderTest {
   TickScriptBuilder tickScriptBuilder;
 
   @Test
-  public void testBuild() throws IOException {
-    String expectedString = readContent("/TickScriptBuilderTest/testBuild.tick");
+  public void testBuildNumberThreshold() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildNumberThreshold.tick");
 
     LevelExpression critExpression = new LevelExpression();
     critExpression.setStateDuration(5)
@@ -62,7 +62,26 @@ public class TickScriptBuilderTest {
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
+  }
 
+  @Test
+  public void testBuildStringThreshold() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildStringThreshold.tick");
+
+    LevelExpression critExpression = new LevelExpression();
+    critExpression.setStateDuration(3)
+        .setExpression(new Expression()
+            .setComparator("!~")
+            .setField("code")
+            .setThreshold("[2-4]\\d\\d"));
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setCritical(critExpression)
+        .setLabelSelector(labelSelectors);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
   }
 
   @Test
