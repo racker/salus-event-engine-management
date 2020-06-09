@@ -61,6 +61,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
 
@@ -68,6 +69,16 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 @WebMvcTest(controllers = TasksApiController.class)
 public class TasksApiControllerTest {
 
+  // Ensure Expressions have their `threshold` field populated with something (a string).
+  DefaultClassInfoStrategy classInfoStrategy;
+  {
+    try {
+      classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
+          .addExtraMethod(Expression.class, "podamHelper", String.class);
+    } catch (NoSuchMethodException e) {
+      e.printStackTrace();
+    }
+  }
   PodamFactory podamFactory = new PodamFactoryImpl();
 
   @Autowired
