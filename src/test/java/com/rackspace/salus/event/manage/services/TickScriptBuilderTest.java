@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.rackspace.salus.event.manage.services;
 
 import static com.rackspace.salus.test.JsonTestUtils.readContent;
 
+import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
@@ -38,7 +39,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 
 @RunWith(SpringRunner.class)
-@Import({TickScriptBuilder.class, KapacitorTaskIdGenerator.class})
+@Import({TickScriptBuilder.class, KapacitorTaskIdGenerator.class, AppProperties.class})
 public class TickScriptBuilderTest {
 
   @Autowired

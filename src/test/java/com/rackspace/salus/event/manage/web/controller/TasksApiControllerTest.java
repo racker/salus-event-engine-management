@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,28 +27,41 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
+import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TestTaskRequest;
+import com.rackspace.salus.event.manage.model.TestTaskResult;
+import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
+import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.EventData;
+import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.SeriesItem;
+import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
 import com.rackspace.salus.event.manage.services.TasksService;
+import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
 import com.rackspace.salus.telemetry.web.TenantVerification;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +74,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
@@ -86,6 +100,9 @@ public class TasksApiControllerTest {
 
   @MockBean
   TasksService tasksService;
+
+  @MockBean
+  TestEventTaskService testEventTaskService;
 
   @MockBean
   EventEnginePicker eventEnginePicker;
@@ -223,6 +240,98 @@ public class TasksApiControllerTest {
 
     verify(tasksService).deleteTask("t-1", id);
     verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
+  public void testTestEventTask() throws Exception{
+    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    final CreateTask createTask = buildCreateTask(true);
+    // ...but ensure user doesn't have to name tasks being tested
+    createTask.setName(null);
+    final TestTaskRequest testTaskRequest = new TestTaskRequest()
+        .setTask(createTask)
+        .setMetric(
+            podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
+            .setName(createTask.getMeasurement())
+        );
+
+    final TestTaskResult expectedResult = new TestTaskResult()
+        .setEvent(
+            new EventResult()
+            .setData(
+                new EventData()
+                .setSeries(List.of(
+                    new SeriesItem()
+                        .setName(testTaskRequest.getTask().getMeasurement())
+                ))
+            )
+            .setLevel("CRITICAL")
+        )
+        .setStats(
+            new Stats()
+            .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
+        );
+
+    when(testEventTaskService.performTestTask(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(expectedResult));
+
+    final MvcResult mvcResult = mockMvc.perform(post("/api/tenant/{tenantId}/test-task", tenantId)
+        .content(objectMapper.writeValueAsString(testTaskRequest))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(request().asyncStarted())
+        .andReturn();
+
+    mockMvc.perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.event.level",
+            equalTo("CRITICAL")))
+        .andExpect(jsonPath("$.event.data.series[0].name",
+            equalTo(testTaskRequest.getTask().getMeasurement())))
+        .andExpect(jsonPath("$.stats.node-stats.alert2.crits_triggered",
+            equalTo(1)))
+    ;
+
+    verify(testEventTaskService).performTestTask(tenantId, testTaskRequest);
+
+    verifyNoMoreInteractions(tasksService, testEventTaskService);
+  }
+
+  @Test
+  public void testTestEventTask_timedOut() throws Exception{
+    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    final CreateTask createTask = buildCreateTask(true);
+    // ...but ensure user doesn't have to name tasks being tested
+    createTask.setName(null);
+    final TestTaskRequest testTaskRequest = new TestTaskRequest()
+        .setTask(createTask)
+        .setMetric(
+            podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
+            .setName(createTask.getMeasurement())
+        );
+
+    final CompletableFuture<TestTaskResult> completableFuture = new CompletableFuture<>();
+    completableFuture.completeExceptionally(new TestTimedOutException("time out", null));
+
+    when(testEventTaskService.performTestTask(any(), any()))
+        .thenReturn(completableFuture);
+
+    final MvcResult mvcResult = mockMvc.perform(post("/api/tenant/{tenantId}/test-task", tenantId)
+        .content(objectMapper.writeValueAsString(testTaskRequest))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(request().asyncStarted())
+        .andReturn();
+
+    mockMvc.perform(asyncDispatch(mvcResult))
+        .andExpect(status().isGatewayTimeout())
+    ;
+
+    verify(testEventTaskService).performTestTask(tenantId, testTaskRequest);
+
+    verifyNoMoreInteractions(tasksService, testEventTaskService);
   }
 
   private static CreateTask buildCreateTask(boolean setName) {

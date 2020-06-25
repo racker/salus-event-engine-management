@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 package com.rackspace.salus.event.manage.web.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TestTaskRequest;
+import com.rackspace.salus.event.manage.model.TestTaskResult;
+import com.rackspace.salus.event.manage.model.ValidationGroups;
 import com.rackspace.salus.event.manage.services.TasksService;
+import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.model.PagedContent;
@@ -29,6 +32,7 @@ import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.Authorization;
 import io.swagger.annotations.AuthorizationScope;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -45,31 +49,33 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/")
-@Api(description = "Monitor operations", authorizations = {
+@Api(description = "Event engine operations", authorizations = {
         @Authorization(value = "repose_auth",
                 scopes = {
-                        @AuthorizationScope(scope = "write:monitor", description = "modify Monitors in your account"),
-                        @AuthorizationScope(scope = "read:monitor", description = "read your Monitors"),
-                        @AuthorizationScope(scope = "delete:monitor", description = "delete your Monitors")
+                        @AuthorizationScope(scope = "write:event-task", description = "modify event tasks in your account"),
+                        @AuthorizationScope(scope = "read:event-task", description = "read your event tasks"),
+                        @AuthorizationScope(scope = "delete:event-task", description = "delete your event tasks")
                 })
 })
 public class TasksApiController {
 
   private final TasksService tasksService;
-  private final ObjectMapper objectMapper;
+  private final TestEventTaskService testEventTaskService;
 
   @Autowired
-  public TasksApiController(TasksService tasksService, ObjectMapper objectMapper) {
+  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService) {
     this.tasksService = tasksService;
-    this.objectMapper = objectMapper;
+    this.testEventTaskService = testEventTaskService;
   }
 
   @PostMapping("/tenant/{tenantId}/tasks")
   @ResponseStatus(HttpStatus.CREATED)
   @ApiOperation(value = "Creates Task for Tenant")
   @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
-  public EventEngineTaskDTO createTask(@PathVariable String tenantId,
-                                       @RequestBody @Validated CreateTask task) {
+  public EventEngineTaskDTO createTask(
+      @PathVariable String tenantId,
+      @RequestBody @Validated(ValidationGroups.Create.class) CreateTask task
+  ) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
     return new EventEngineTaskDTO(eventEngineTask);
@@ -91,5 +97,18 @@ public class TasksApiController {
   public void deleteTask(@PathVariable String tenantId,
                          @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);
+  }
+
+  @PostMapping("/tenant/{tenantId}/test-task")
+  @ApiOperation("Test an event-task")
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Test completed successfully"),
+      @ApiResponse(code = 422, message = "Test failed to complete"),
+      @ApiResponse(code = 504, message = "Test timed out waiting for result")
+  })
+  public CompletableFuture<TestTaskResult> testEventTask(
+      @PathVariable String tenantId,
+      @RequestBody @Validated(ValidationGroups.Test.class) TestTaskRequest request) {
+    return testEventTaskService.performTestTask(tenantId, request);
   }
 }

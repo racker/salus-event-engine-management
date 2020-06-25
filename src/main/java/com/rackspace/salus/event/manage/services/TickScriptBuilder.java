@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.event.common.Tags;
+import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
@@ -49,16 +50,21 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class TickScriptBuilder {
 
+  public static final String ID_PART_TASK_NAME = "{{ .TaskName }}";
+  public static final String ID_PART_GROUP = "{{ .Group }}";
+
   private final Template taskTemplate;
+  private final AppProperties appProperties;
 
   Pattern validRealNumber = Pattern.compile("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$");
 
   Pattern evalExpression = Pattern.compile(EvalExpressionValidator.functionRegex);
 
   @Autowired
-  public TickScriptBuilder(KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
+  public TickScriptBuilder(AppProperties appProperties,
                            @Value("classpath:templates/task.mustache") Resource taskTemplateResource)
       throws IOException {
+    this.appProperties = appProperties;
 
     final Compiler mustacheCompiler = Mustache.compiler().withEscaper(Escapers.NONE);
     try (InputStreamReader taskTemplateReader = new InputStreamReader(
@@ -67,7 +73,17 @@ public class TickScriptBuilder {
     }
   }
 
-  public String build(String tenantId, String measurement, EventEngineTaskParameters taskParameters) {
+  public String build(String tenantId, String measurement,
+                      EventEngineTaskParameters taskParameters) {
+    return build(tenantId, measurement, taskParameters, appProperties.getEventHandlerTopic(),
+        List.of(ID_PART_TASK_NAME, ID_PART_GROUP));
+  }
+
+  public String build(String tenantId,
+                      String measurement,
+                      EventEngineTaskParameters taskParameters,
+                      String eventHandlerTopic,
+                      List<String> idParts) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null && !taskParameters.getLabelSelector().isEmpty()) {
       labelsAvailable = true;
@@ -78,10 +94,7 @@ public class TickScriptBuilder {
 
     return taskTemplate.execute(TaskContext.builder()
         .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
-        .alertId(String.join(":",
-            "{{ .TaskName }}",
-            "{{ .Group }}"
-            ))
+        .alertId(String.join(":", idParts))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
@@ -99,6 +112,7 @@ public class TickScriptBuilder {
         .joinedAs(joinAs(taskParameters.getEvalExpressions()))
         .windowLength(taskParameters.getWindowLength())
         .windowFields(taskParameters.getWindowFields())
+        .eventHandlerTopic(eventHandlerTopic)
         .build());
   }
 
@@ -209,5 +223,6 @@ public class TickScriptBuilder {
     String groupBy = Tags.RESOURCE_ID;
     String joinedEvals;
     String joinedAs;
+    String eventHandlerTopic;
   }
 }

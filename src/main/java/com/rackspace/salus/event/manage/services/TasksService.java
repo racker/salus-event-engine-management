@@ -19,6 +19,8 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.event.common.InfluxScope;
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
+import com.rackspace.salus.event.manage.errors.BackendException;
+import com.rackspace.salus.event.manage.errors.NotFoundException;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.kapacitor.DbRp;
 import com.rackspace.salus.event.manage.model.kapacitor.Task;
@@ -70,16 +72,15 @@ public class TasksService {
   public EventEngineTask createTask(String tenantId, CreateTask in) {
 
     final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
-    final Task task = Task.builder()
-        .id(taskId.getKapacitorTaskId())
-        .type(Type.stream)
-        .dbrps(Collections.singletonList(DbRp.builder()
-            .db(tenantId)
-            .rp(InfluxScope.INGEST_RETENTION_POLICY)
-            .build()))
-        .script(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getTaskParameters()))
-        .status(Status.enabled)
-        .build();
+    final Task task = new Task()
+        .setId(taskId.getKapacitorTaskId())
+        .setType(Type.stream)
+        .setDbrps(Collections.singletonList(new DbRp()
+            .setDb(tenantId)
+            .setRp(InfluxScope.INGEST_RETENTION_POLICY)
+            ))
+        .setScript(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getTaskParameters()))
+        .setStatus(Status.enabled);
 
     final List<EngineInstance> applied = new ArrayList<>();
 

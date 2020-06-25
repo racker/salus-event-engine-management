@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.model;
 
-import lombok.Data;
-
-@Data
-public class DbRp {
-  String db;
-  String rp;
+public class ValidationGroups {
+  public interface Create{}
+  public interface Test{}
 }

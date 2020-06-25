@@ -34,6 +34,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
+import com.rackspace.salus.event.manage.errors.BackendException;
+import com.rackspace.salus.event.manage.errors.NotFoundException;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;

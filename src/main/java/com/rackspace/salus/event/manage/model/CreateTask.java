@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import lombok.Data;
 @Data
 public class CreateTask {
 
-  @NotEmpty
+  @NotEmpty(groups = ValidationGroups.Create.class)
   String name;
 
   @NotEmpty

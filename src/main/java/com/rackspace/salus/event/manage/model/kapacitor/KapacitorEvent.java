@@ -16,35 +16,34 @@
 
 package com.rackspace.salus.event.manage.model.kapacitor;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import lombok.Data;
 
 @Data
-public class Task {
-  String id;
-  Type type;
-  List<DbRp> dbrps;
-  String script;
-  Map<String, Var> vars;
-  Status status;
-  String error;
-  Stats stats;
+@JsonInclude(Include.NON_NULL)
+public class KapacitorEvent{
+    private String id;
+    private int duration;
+    private String previousLevel;
+    private EventData data;
+    private String level;
+    private boolean recoverable;
+    private String details;
+    private Date time;
+    private String message;
 
-  public enum Type {
-    stream
-  }
+    @Data
+    public static class EventData {
+        private List<SeriesItem> series;
+    }
 
-  public enum Status {
-    enabled, disabled
-  }
-
-  @Data
-  public static class Stats {
-    @JsonProperty("task-stats")
-    Map<String, Integer> taskStats;
-    @JsonProperty("node-stats")
-    Map<String, Map<String,Integer>> nodeStats;
-  }
+    @Data
+    public static class SeriesItem{
+        private String name;
+        private List<String> columns;
+        private List<Object> values;
+    }
 }

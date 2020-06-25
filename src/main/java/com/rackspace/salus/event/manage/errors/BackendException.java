@@ -14,37 +14,20 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.errors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import java.util.Map;
-import lombok.Data;
+import org.springframework.http.ResponseEntity;
 
-@Data
-public class Task {
-  String id;
-  Type type;
-  List<DbRp> dbrps;
-  String script;
-  Map<String, Var> vars;
-  Status status;
-  String error;
-  Stats stats;
+public class BackendException extends RuntimeException {
 
-  public enum Type {
-    stream
+  private final ResponseEntity<?> response;
+
+  public BackendException(ResponseEntity<?> response, String message) {
+    super(message);
+    this.response = response;
   }
 
-  public enum Status {
-    enabled, disabled
-  }
-
-  @Data
-  public static class Stats {
-    @JsonProperty("task-stats")
-    Map<String, Integer> taskStats;
-    @JsonProperty("node-stats")
-    Map<String, Map<String,Integer>> nodeStats;
+  public ResponseEntity<?> getResponse() {
+    return response;
   }
 }

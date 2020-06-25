@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.services;
+package com.rackspace.salus.event.manage.config;
 
-public class NotFoundException extends RuntimeException {
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-  public NotFoundException(String message) {
-    super(message);
-  }
+@ConfigurationProperties("salus.event-engine-management")
+@Component
+@Data
+public class AppProperties {
 
-  public NotFoundException(String message, Throwable cause) {
-    super(message, cause);
-  }
+  /**
+   * The kapacitor event handler topic that processes long-lived kapacitor tasks
+   * This is different than the kafka topic where the events are produced.
+   */
+  String eventHandlerTopic = "events";
 }

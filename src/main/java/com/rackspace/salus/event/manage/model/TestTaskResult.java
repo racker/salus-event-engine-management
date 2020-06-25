@@ -14,37 +14,23 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
+import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import lombok.Data;
 
 @Data
-public class Task {
-  String id;
-  Type type;
-  List<DbRp> dbrps;
-  String script;
-  Map<String, Var> vars;
-  Status status;
-  String error;
-  Stats stats;
-
-  public enum Type {
-    stream
-  }
-
-  public enum Status {
-    enabled, disabled
-  }
+@JsonInclude(Include.NON_NULL)
+public class TestTaskResult {
+  EventResult event;
+  Task.Stats stats;
 
   @Data
-  public static class Stats {
-    @JsonProperty("task-stats")
-    Map<String, Integer> taskStats;
-    @JsonProperty("node-stats")
-    Map<String, Map<String,Integer>> nodeStats;
+  public static class EventResult {
+    String level;
+    KapacitorEvent.EventData data;
   }
 }

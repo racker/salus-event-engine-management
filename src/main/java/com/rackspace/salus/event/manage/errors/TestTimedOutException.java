@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.errors;
 
-import lombok.Data;
+public class TestTimedOutException extends RuntimeException {
 
-@Data
-public class DbRp {
-  String db;
-  String rp;
+  public TestTimedOutException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

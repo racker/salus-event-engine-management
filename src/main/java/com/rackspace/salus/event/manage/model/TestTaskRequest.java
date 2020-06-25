@@ -14,37 +14,18 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import java.util.Map;
+import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class Task {
-  String id;
-  Type type;
-  List<DbRp> dbrps;
-  String script;
-  Map<String, Var> vars;
-  Status status;
-  String error;
-  Stats stats;
+public class TestTaskRequest {
+  @NotNull
+  SimpleNameTagValueMetric metric;
 
-  public enum Type {
-    stream
-  }
-
-  public enum Status {
-    enabled, disabled
-  }
-
-  @Data
-  public static class Stats {
-    @JsonProperty("task-stats")
-    Map<String, Integer> taskStats;
-    @JsonProperty("node-stats")
-    Map<String, Map<String,Integer>> nodeStats;
-  }
+  @NotNull @Valid
+  CreateTask task;
 }

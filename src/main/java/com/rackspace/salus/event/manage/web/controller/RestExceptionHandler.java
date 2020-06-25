@@ -17,6 +17,8 @@
 package com.rackspace.salus.event.manage.web.controller;
 
 import com.rackspace.salus.common.web.AbstractRestExceptionHandler;
+import com.rackspace.salus.event.manage.errors.BackendException;
+import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.telemetry.model.NotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,5 +42,17 @@ public class RestExceptionHandler extends AbstractRestExceptionHandler {
   public ResponseEntity<?> handleNotFound(
       HttpServletRequest request) {
     return respondWith(request, HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler({BackendException.class})
+  public ResponseEntity<?> handleBackendException(
+      HttpServletRequest request) {
+    return respondWith(request, HttpStatus.BAD_GATEWAY);
+  }
+
+  @ExceptionHandler({TestTimedOutException.class})
+  public ResponseEntity<?> handleTestTimedOut(
+      HttpServletRequest request) {
+    return respondWith(request, HttpStatus.GATEWAY_TIMEOUT);
   }
 }

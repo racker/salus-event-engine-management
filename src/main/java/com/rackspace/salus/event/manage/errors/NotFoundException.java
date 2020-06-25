@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.services;
+package com.rackspace.salus.event.manage.errors;
 
-import org.springframework.http.ResponseEntity;
+public class NotFoundException extends RuntimeException {
 
-public class BackendException extends RuntimeException {
-
-  private final ResponseEntity<?> response;
-
-  public BackendException(ResponseEntity<?> response, String message) {
+  public NotFoundException(String message) {
     super(message);
-    this.response = response;
   }
 
-  public ResponseEntity<?> getResponse() {
-    return response;
-  }
 }

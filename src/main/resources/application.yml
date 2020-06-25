@@ -4,6 +4,7 @@ spring:
       default-view-inclusion: true
   zipkin:
     enabled: false
+management.endpoints.web.exposure.include: "health,jolokia,metrics,loggers"
 management:
   metrics:
     export:

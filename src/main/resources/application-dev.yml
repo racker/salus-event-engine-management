@@ -32,3 +32,6 @@ spring:
     username: dev
     password: pass
     url: jdbc:mysql://localhost:3306/default?verifyServerCertificate=false&useSSL=false&requireSSL=false
+  kafka:
+    listener:
+      missing-topics-fatal: false

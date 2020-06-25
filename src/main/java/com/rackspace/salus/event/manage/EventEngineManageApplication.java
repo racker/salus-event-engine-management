@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.rackspace.salus.event.manage;
 
 import com.rackspace.salus.common.config.AutoConfigureSalusAppMetrics;
+import com.rackspace.salus.common.messaging.EnableSalusKafkaMessaging;
 import com.rackspace.salus.common.util.DumpConfigProperties;
 import com.rackspace.salus.common.web.EnableExtendedErrorAttributes;
 import com.rackspace.salus.common.web.EnableRoleBasedJsonViews;
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Import;
 @EnableExtendedErrorAttributes
 @EnableTenantVerification
 @AutoConfigureSalusAppMetrics
+@EnableSalusKafkaMessaging
 @Import(DiscoveryServiceModule.class)
 public class EventEngineManageApplication {
 
