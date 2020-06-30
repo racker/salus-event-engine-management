@@ -35,7 +35,6 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -152,18 +151,11 @@ public class TickScriptBuilder {
   private String buildTICKExpression(LogicalExpression expression) {
     String logicalOperator = expression.getOperator().toString();
 
-    StringBuilder tickExpression = new StringBuilder("(");
-    ListIterator<Expression> iterator = expression.getExpressions().listIterator();
-    while (iterator.hasNext()) {
-      if (iterator.hasPrevious()) {
-        tickExpression.append(" ")
-            .append(logicalOperator)
-            .append(" ");
-      }
-      tickExpression.append(buildTICKExpression(iterator.next()));
-    }
-    tickExpression.append(")");
-    return tickExpression.toString();
+    return "("
+        + expression.getExpressions().stream()
+        .map(this::buildTICKExpression)
+        .collect(Collectors.joining(" " + logicalOperator + " "))
+        + ")";
   }
 
   private String buildTICKExpression(ComparisonExpression expression) {
