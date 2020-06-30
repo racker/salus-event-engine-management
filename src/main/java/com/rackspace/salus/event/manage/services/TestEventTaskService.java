@@ -33,7 +33,6 @@ import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Type;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -299,21 +298,21 @@ public class TestEventTaskService {
 
   /**
    * Removes all stateful and filtering aspects of the task.
+   *
+   * Ensures a task can be executed on the single metric provided rather than requiring a
+   * series of metrics to be received.
+   *
+   * For example, if stateDuration is set to 10mins, a test-task should not require 10mins worth
+   * of metrics before returning a result.
    */
   private static EventEngineTaskParameters simplifyTask(EventEngineTaskParameters taskParameters) {
     return new EventEngineTaskParameters()
         .setLabelSelector(Map.of())
+        .setCriticalStateDuration(null)
+        .setWarningStateDuration(null)
+        .setInfoStateDuration(null)
         .setEvalExpressions(taskParameters.getEvalExpressions())
-        .setCritical(simplifyLevelExpression(taskParameters.getCritical()))
-        .setWarning(simplifyLevelExpression(taskParameters.getWarning()))
-        .setInfo(simplifyLevelExpression(taskParameters.getInfo()));
-  }
-
-  private static LevelExpression simplifyLevelExpression(LevelExpression levelExpression) {
-    return levelExpression != null ? new LevelExpression()
-        .setExpression(levelExpression.getExpression())
-        .setStateDuration(null)
-        : null;
+        .setStateExpressions(taskParameters.getStateExpressions());
   }
 
   private void postMetric(TestTaskRequest request, EngineInstance engineInstance,

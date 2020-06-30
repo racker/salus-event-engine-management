@@ -11,6 +11,6 @@ stream
     .stateChangesOnly()
     .id('{{ .TaskName }}:{{ .Group }}')
     .details('task={{.TaskName}}')
-    .crit(lambda: "field" > 33)
+    .crit(lambda: ("field" > 33))
     .history(21)
     .topic('events')

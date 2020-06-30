@@ -20,9 +20,10 @@ import static com.rackspace.salus.test.JsonTestUtils.readContent;
 
 import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,17 +50,22 @@ public class TickScriptBuilderTest {
   public void testBuildNumberThreshold() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNumberThreshold.tick");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
-        .setLabelSelector(labelSelectors);
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors)
+        .setCriticalStateDuration(5);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
@@ -69,17 +75,22 @@ public class TickScriptBuilderTest {
   public void testBuildStringThreshold() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildStringThreshold.tick");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(3)
-        .setExpression(new Expression()
-            .setComparator("!~")
-            .setField("code")
-            .setThreshold("[2-4]\\d\\d"));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("code")
+        .setComparator("!~")
+        .setComparisonValue("[2-4]\\d\\d");
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Invalid code found");
+
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
-        .setLabelSelector(labelSelectors);
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors)
+        .setCriticalStateDuration(3);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
@@ -89,16 +100,21 @@ public class TickScriptBuilderTest {
   public void testBuildOnlyInfo() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
 
-    LevelExpression infoExpression = new LevelExpression();
-    infoExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression infoExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(infoExpression)
+        .setState(TaskState.INFO)
+        .setMessage("Thresholds returned to normal");
+
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setInfo(infoExpression)
+        .setStateExpressions(List.of(stateExpression))
+        .setInfoStateDuration(5)
         .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
@@ -110,51 +126,65 @@ public class TickScriptBuilderTest {
   public void testBuildMultipleExpressions() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
 
-    LevelExpression warnExpression = new LevelExpression();
-    warnExpression.setStateDuration(3)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression warnExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(30);
 
-    LevelExpression infoExpression = new LevelExpression();
-    infoExpression.setStateDuration(1)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(20));
+    ComparisonExpression infoExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(20);
+
+    List<StateExpression> stateExpressions = List.of(
+        new StateExpression()
+            .setExpression(critExpression)
+            .setState(TaskState.CRITICAL)
+            .setMessage("critical threshold hit"),
+        new StateExpression()
+            .setExpression(warnExpression)
+            .setState(TaskState.WARNING)
+            .setMessage("warning threshold hit"),
+        new StateExpression()
+            .setExpression(infoExpression)
+            .setState(TaskState.INFO)
+            .setMessage("thresholds returned to normal"));
+
     Map<String, String> labelSelectors = new HashMap<>();
     labelSelectors.put("resource_metadata_os", "linux");
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
-        .setWarning(warnExpression)
-        .setInfo(infoExpression)
+        .setStateExpressions(stateExpressions)
+        .setInfoStateDuration(1)
+        .setWarningStateDuration(3)
+        .setCriticalStateDuration(5)
         .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
-
   }
 
   @Test
   public void testBuildNoLabels() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression);
+        .setStateExpressions(List.of(stateExpression))
+        .setCriticalStateDuration(5);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
@@ -164,15 +194,20 @@ public class TickScriptBuilderTest {
   public void testBuildEmptySetOfLabels() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
-        .setLabelSelector(Collections.EMPTY_MAP);
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(Collections.EMPTY_MAP)
+        .setCriticalStateDuration(5);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
@@ -185,19 +220,23 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setStateDuration(5)
-        .setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33));
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
-        .setLabelSelector(labelSelectors);
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors)
+        .setCriticalStateDuration(5);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
-
   }
 
   @Test
@@ -235,14 +274,18 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_os", "linux");
     labelSelectors.put("resource_metadata_env", "prod");
 
-    LevelExpression critExpression = new LevelExpression();
-    critExpression.setExpression(new Expression()
-            .setComparator(">")
-            .setField("field")
-            .setThreshold(33))
-            .setStateDuration(null);
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(">")
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
     EventEngineTaskParameters tp = new EventEngineTaskParameters()
-        .setCritical(critExpression)
+        .setStateExpressions(List.of(stateExpression))
         .setLabelSelector(labelSelectors);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);

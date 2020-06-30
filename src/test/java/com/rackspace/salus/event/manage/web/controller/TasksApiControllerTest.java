@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.web.controller;
 
+import static com.rackspace.salus.common.util.SpringResourceUtils.readContent;
 import static com.rackspace.salus.test.WebTestUtils.validationError;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.is;
@@ -51,15 +52,20 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
 import com.rackspace.salus.telemetry.web.TenantVerification;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -88,7 +94,7 @@ public class TasksApiControllerTest {
   {
     try {
       classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
-          .addExtraMethod(Expression.class, "podamHelper", String.class);
+          .addExtraMethod(ComparisonExpression.class, "podamHelper", String.class);
     } catch (NoSuchMethodException e) {
       e.printStackTrace();
     }
@@ -180,6 +186,27 @@ public class TasksApiControllerTest {
         .andExpect(jsonPath("$.totalElements", equalTo(numberOfTasks)));
 
     verify(tasksService).getTasks(tenantId, PageRequest.of(0, 20));
+    verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
+  public void testGetTask_testSerialization() throws Exception {
+    String tenantId = "testSerialization";
+    EventEngineTask task = buildTask(tenantId);
+
+    when(tasksService.getTask(anyString(), any()))
+        .thenReturn(Optional.of(task));
+
+    mockMvc.perform(get("/api/tenant/{tenantId}/tasks/{uuid}", tenantId, task.getId())
+        .contentType(MediaType.APPLICATION_JSON))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(content()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(content().json(
+            readContent("TasksControllerTest/get_task_response.json"), true));
+
+    verify(tasksService).getTask(tenantId, task.getId());
     verifyNoMoreInteractions(tasksService);
   }
 
@@ -335,28 +362,60 @@ public class TasksApiControllerTest {
   }
 
   private static CreateTask buildCreateTask(boolean setName) {
-    CreateTask task = new CreateTask()
+    return new CreateTask()
+        .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
         .setTaskParameters(
             new EventEngineTaskParameters()
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
-                .setCritical(
-                    new LevelExpression()
-                        .setStateDuration(1)
+                .setCriticalStateDuration(5)
+                .setStateExpressions(List.of(
+                    new StateExpression()
                         .setExpression(
-                            new Expression()
-                                .setField("usage_user")
+                            new ComparisonExpression()
+                                .setMetricName("usage_user")
                                 .setComparator(">")
-                                .setThreshold(75)
+                                .setComparisonValue(75)
                         )
-                )
-        );
+                    )
+                ));
+  }
 
-    if (setName) {
-      task.setName("this is my name");
-    }
-    return task;
+  private static EventEngineTask buildTask(String tenantId) {
+    return new EventEngineTask()
+        .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+        .setKapacitorTaskId("testTaskId")
+        .setCreatedTimestamp(Instant.EPOCH)
+        .setUpdatedTimestamp(Instant.EPOCH)
+        .setTenantId(tenantId)
+        .setName("my-test-task")
+        .setMeasurement("disk")
+        .setTaskParameters(
+            new EventEngineTaskParameters()
+                .setLabelSelector(
+                    singletonMap("discovered_os", "linux")
+                )
+                .setCriticalStateDuration(5)
+                .setStateExpressions(List.of(
+                    new StateExpression()
+                        .setState(TaskState.CRITICAL)
+                        .setMessage("critical threshold was hit")
+                        .setExpression(
+                            new LogicalExpression()
+                        .setOperator(Operator.OR)
+                        .setExpressions(List.of(
+                                    new ComparisonExpression()
+                                        .setMetricName("usage_user")
+                                        .setComparator(">")
+                                        .setComparisonValue(75),
+                                    new ComparisonExpression()
+                                        .setMetricName("usage_system")
+                                        .setComparator("==")
+                                        .setComparisonValue(92)))
+                        )
+                ))
+        );
   }
 }

@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,8 +50,8 @@ import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.test.JsonTestUtils;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -332,8 +333,8 @@ public class TestEventTaskServiceTest {
     verify(tickScriptBuilder).build(eq("t-1"), eq(request.getTask().getMeasurement()),
         argThat(params -> {
           // spot check individual parts
-          assertThat(params.getCritical())
-              .isEqualTo(request.getTask().getTaskParameters().getCritical());
+          assertThat(params.getStateExpressions())
+              .isEqualTo(request.getTask().getTaskParameters().getStateExpressions());
           return true;
         }),
         eq(testEventTaskProperties.getEventHandlerTopic()),
@@ -342,7 +343,7 @@ public class TestEventTaskServiceTest {
   }
 
   private Task setupMockKapacitorServer(String expectedTaskCreate, String taskId,
-                                        boolean includeTaskGet, boolean failedMetricWrite)
+      boolean includeTaskGet, boolean failedMetricWrite)
       throws JsonProcessingException {
     mockServer.expect(requestTo("http://localhost:0/kapacitor/v1/tasks"))
         .andExpect(method(HttpMethod.POST))
@@ -374,7 +375,7 @@ public class TestEventTaskServiceTest {
           );
       mockServer.expect(
           requestToUriTemplate("http://localhost:0/kapacitor/v1/tasks/{taskId}", taskId)
-          )
+      )
           .andExpect(method(HttpMethod.GET))
           .andRespond(
               withSuccess(
@@ -418,14 +419,19 @@ public class TestEventTaskServiceTest {
                 .setMeasurement("cpu")
                 .setTaskParameters(
                     new EventEngineTaskParameters()
-                        .setCritical(
-                            new LevelExpression()
+                        .setLabelSelector(
+                            singletonMap("agent_environment", "localdev")
+                        )
+                        .setCriticalStateDuration(5)
+                        .setStateExpressions(List.of(
+                            new StateExpression()
                                 .setExpression(
-                                    new Expression()
-                                        .setField("usage")
+                                    new ComparisonExpression()
+                                        .setMetricName("usage")
                                         .setComparator(">")
-                                        .setThreshold(80)
+                                        .setComparisonValue(80)
                                 )
+                            )
                         )
                 )
         )

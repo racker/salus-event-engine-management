@@ -5,7 +5,7 @@ stream
   |where(lambda:
     isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
       )
-  |stateDuration(lambda: "field" > 33)
+  |stateDuration(lambda: ("field" > 33))
     .unit(1m)
     .as('crit_count')
   |alert()

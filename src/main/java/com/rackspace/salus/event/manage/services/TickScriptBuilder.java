@@ -19,8 +19,12 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.validators.EvalExpressionValidator;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
@@ -31,6 +35,7 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -92,21 +97,26 @@ public class TickScriptBuilder {
       taskParameters.setLabelSelector(Collections.EMPTY_MAP);
     }
 
+
+    Map<TaskState, List<StateExpression>> expressionsByState = taskParameters.getStateExpressions()
+        .stream()
+        .collect(Collectors.groupingBy(StateExpression::getState));
+
     return taskTemplate.execute(TaskContext.builder()
         .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(String.join(":", idParts))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(buildTICKExpression(taskParameters.getCritical()))
-        .infoExpression(buildTICKExpression(taskParameters.getInfo()))
-        .warnExpression(buildTICKExpression(taskParameters.getWarning()))
-        .infoCount(
-          buildTICKExpression(taskParameters.getInfo(), "\"info_count\" >= %d"))
-        .warnCount(
-          buildTICKExpression(taskParameters.getWarning(), "\"warn_count\" >= %d"))
-        .critCount(
-          buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
+        .infoExpression(buildTICKExpression(expressionsByState.get(TaskState.INFO)))
+        .warnExpression(buildTICKExpression(expressionsByState.get(TaskState.WARNING)))
+        .critExpression(buildTICKExpression(expressionsByState.get(TaskState.CRITICAL)))
+        .infoCount(taskParameters.getInfoStateDuration() != null ?
+            String.format("\"info_count\" >= %d", taskParameters.getInfoStateDuration()): null)
+        .warnCount(taskParameters.getWarningStateDuration() != null ?
+            String.format("\"warn_count\" >= %d", taskParameters.getWarningStateDuration()): null)
+        .critCount(taskParameters.getCriticalStateDuration() != null ?
+            String.format("\"crit_count\" >= %d", taskParameters.getCriticalStateDuration()) : null)
         .flappingDetection(taskParameters.isFlappingDetection())
         .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
         .joinedAs(joinAs(taskParameters.getEvalExpressions()))
@@ -116,30 +126,66 @@ public class TickScriptBuilder {
         .build());
   }
 
-  public String buildTICKExpression(LevelExpression expression) {
-    if (expression == null) {
+  public String buildTICKExpression(List<StateExpression> expressions) {
+    if (expressions == null || expressions.isEmpty()) {
       return null;
     }
 
-    String tickExpression = String.format("\"%s\" %s ", expression.getExpression().getField(),
-        expression.getExpression().getComparator());
-
-    Object threshold = expression.getExpression().getThreshold();
-    if (threshold instanceof Number) {
-      tickExpression += (Number) threshold;
-    } else if (threshold instanceof String) {
-      tickExpression += "\"" + (String) threshold + "\"";
-    } else {
-      log.error("Could not evaluate task threshold from {}", threshold);
-      return null;
+    StringBuilder tickExpression = new StringBuilder();
+    for (StateExpression stateExpression : expressions) {
+      tickExpression.append(buildTICKExpression(stateExpression.getExpression()));
     }
-
-    return tickExpression;
+    return tickExpression.toString();
   }
 
-  public String buildTICKExpression(LevelExpression levelExpression, String formatString) {
-    return levelExpression != null && levelExpression.getStateDuration() != null ? String.format(formatString, levelExpression.getStateDuration()) :
-        null;
+  private String buildTICKExpression(Expression expression) {
+    if (expression instanceof ComparisonExpression) {
+      return buildTICKExpression((ComparisonExpression) expression);
+    } else if (expression instanceof LogicalExpression) {
+      return buildTICKExpression((LogicalExpression) expression);
+    } else {
+      log.error("Unknown expression type found", expression);
+      return null;
+    }
+  }
+
+  private String buildTICKExpression(LogicalExpression expression) {
+    String logicalOperator = expression.getOperator().toString();
+
+    StringBuilder tickExpression = new StringBuilder("(");
+    ListIterator<Expression> iterator = expression.getExpressions().listIterator();
+    while (iterator.hasNext()) {
+      if (iterator.hasPrevious()) {
+        tickExpression.append(" ")
+            .append(logicalOperator)
+            .append(" ");
+      }
+      tickExpression.append(buildTICKExpression(iterator.next()));
+    }
+    tickExpression.append(")");
+    return tickExpression.toString();
+  }
+
+  private String buildTICKExpression(ComparisonExpression expression) {
+    StringBuilder tickExpression = new StringBuilder("(");
+    tickExpression.append("\"").append(expression.getMetricName()).append("\"");
+    tickExpression.append(" ");
+    tickExpression.append(expression.getComparator());
+    tickExpression.append(" ");
+
+    if (expression.getComparisonValue() instanceof Number) {
+      tickExpression.append(expression.getComparisonValue());
+    } else if (expression.getComparisonValue() instanceof String) {
+      // TODO: booleans will fall under string logic?
+      tickExpression.append("\"").append((String) expression.getComparisonValue()).append("\"");
+    } else {
+      log.error("Could not evaluate task comparison value from {}", expression.getComparisonValue());
+      return null;
+    }
+
+    tickExpression.append(")");
+
+    return tickExpression.toString();
   }
 
   private boolean isValidRealNumber(String operand) {

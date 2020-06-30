@@ -24,6 +24,7 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.model.NotFoundException;
 import com.rackspace.salus.telemetry.model.PagedContent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -79,6 +80,16 @@ public class TasksApiController {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
     return new EventEngineTaskDTO(eventEngineTask);
+  }
+
+  @GetMapping("/tenant/{tenantId}/tasks/{uuid}")
+  @ApiOperation(value = "Get a Task by id for the specific Tenant")
+  public EventEngineTaskDTO getTask(@PathVariable String tenantId, @PathVariable UUID uuid) {
+    EventEngineTask task = tasksService.getTask(tenantId, uuid).orElseThrow(
+        () -> new NotFoundException(String.format("No task found for %s on tenant %s",
+            uuid, tenantId
+        )));
+    return new EventEngineTaskDTO(task);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks")

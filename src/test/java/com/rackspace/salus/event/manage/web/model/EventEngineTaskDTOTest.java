@@ -22,14 +22,16 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.common.web.View;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import org.junit.Test;
+import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
 import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
 
+@JsonTest
 public class EventEngineTaskDTOTest {
 
   // Ensure Expressions have their `threshold` field populated with something (a string).
@@ -37,7 +39,7 @@ public class EventEngineTaskDTOTest {
   {
     try {
       classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
-            .addExtraMethod(Expression.class, "podamHelper", String.class);
+            .addExtraMethod(ComparisonExpression.class, "podamHelper", String.class);
     } catch (NoSuchMethodException e) {
       e.printStackTrace();
     }

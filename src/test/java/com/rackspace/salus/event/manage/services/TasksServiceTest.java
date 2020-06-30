@@ -40,14 +40,15 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import com.rackspace.salus.test.EnableTestContainersDatabase;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.After;
@@ -492,16 +493,16 @@ public class TasksServiceTest {
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
-                .setCritical(
-                    new LevelExpression()
-                        .setStateDuration(1)
+                .setCriticalStateDuration(5)
+                .setStateExpressions(List.of(
+                    new StateExpression()
                         .setExpression(
-                            new Expression()
-                                .setField("usage_user")
+                            new ComparisonExpression()
+                                .setMetricName("usage_user")
                                 .setComparator(">")
-                                .setThreshold(75)
+                                .setComparisonValue(75)
                         )
                 )
-        );
+        ));
   }
 }
