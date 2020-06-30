@@ -20,6 +20,7 @@ import static com.rackspace.salus.test.JsonTestUtils.readContent;
 
 import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
@@ -52,7 +53,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()
@@ -77,7 +78,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("code")
-        .setComparator("!~")
+        .setComparator(Comparator.NOT_REGEX_MATCH)
         .setComparisonValue("[2-4]\\d\\d");
 
     StateExpression stateExpression = new StateExpression()
@@ -102,7 +103,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression infoExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()
@@ -128,17 +129,17 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     ComparisonExpression warnExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(30);
 
     ComparisonExpression infoExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(20);
 
     List<StateExpression> stateExpressions = List.of(
@@ -174,7 +175,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()
@@ -196,7 +197,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()
@@ -222,7 +223,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()
@@ -276,7 +277,7 @@ public class TickScriptBuilderTest {
 
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
-        .setComparator(">")
+        .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
     StateExpression stateExpression = new StateExpression()

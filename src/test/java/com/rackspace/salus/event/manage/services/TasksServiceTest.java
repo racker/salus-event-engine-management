@@ -40,6 +40,7 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
@@ -499,7 +500,7 @@ public class TasksServiceTest {
                         .setExpression(
                             new ComparisonExpression()
                                 .setMetricName("usage_user")
-                                .setComparator(">")
+                                .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
                 )

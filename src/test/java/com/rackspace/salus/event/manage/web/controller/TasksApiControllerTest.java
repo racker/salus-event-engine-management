@@ -52,6 +52,7 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
@@ -376,7 +377,7 @@ public class TasksApiControllerTest {
                         .setExpression(
                             new ComparisonExpression()
                                 .setMetricName("usage_user")
-                                .setComparator(">")
+                                .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
                     )
@@ -408,11 +409,11 @@ public class TasksApiControllerTest {
                         .setExpressions(List.of(
                                     new ComparisonExpression()
                                         .setMetricName("usage_user")
-                                        .setComparator(">")
+                                        .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(75),
                                     new ComparisonExpression()
                                         .setMetricName("usage_system")
-                                        .setComparator("==")
+                                        .setComparator(Comparator.EQUAL_TO)
                                         .setComparisonValue(92)))
                         )
                 ))

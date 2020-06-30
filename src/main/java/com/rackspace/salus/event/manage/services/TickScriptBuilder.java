@@ -170,7 +170,7 @@ public class TickScriptBuilder {
     StringBuilder tickExpression = new StringBuilder("(");
     tickExpression.append("\"").append(expression.getMetricName()).append("\"");
     tickExpression.append(" ");
-    tickExpression.append(expression.getComparator());
+    tickExpression.append(expression.getComparator().getFriendlyName());
     tickExpression.append(" ");
 
     if (expression.getComparisonValue() instanceof Number) {

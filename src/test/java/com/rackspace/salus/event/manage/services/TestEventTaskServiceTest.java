@@ -50,6 +50,7 @@ import com.rackspace.salus.event.manage.model.kapacitor.Task;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
@@ -428,7 +429,7 @@ public class TestEventTaskServiceTest {
                                 .setExpression(
                                     new ComparisonExpression()
                                         .setMetricName("usage")
-                                        .setComparator(">")
+                                        .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(80)
                                 )
                             )
