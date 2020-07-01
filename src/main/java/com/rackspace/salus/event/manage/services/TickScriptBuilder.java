@@ -166,8 +166,9 @@ public class TickScriptBuilder {
 
     if (expression.getComparisonValue() instanceof Number) {
       tickExpression.append(expression.getComparisonValue());
+    } else if (expression.getComparisonValue() instanceof Boolean) {
+      tickExpression.append((Boolean) expression.getComparisonValue() ? "TRUE" : "FALSE");
     } else if (expression.getComparisonValue() instanceof String) {
-      // TODO: booleans will fall under string logic?
       tickExpression.append("\"").append((String) expression.getComparisonValue()).append("\"");
     } else {
       log.error("Could not evaluate task comparison value from {}", expression.getComparisonValue());

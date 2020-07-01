@@ -56,7 +56,7 @@ public class TickScriptBuilderTest {
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("field")
         .setComparator(Comparator.GREATER_THAN)
-        .setComparisonValue(33);
+        .setComparisonValue(0);
 
     StateExpression stateExpression = new StateExpression()
         .setExpression(critExpression)
@@ -81,7 +81,7 @@ public class TickScriptBuilderTest {
     ComparisonExpression critExpression = new ComparisonExpression()
         .setMetricName("code")
         .setComparator(Comparator.NOT_REGEX_MATCH)
-        .setComparisonValue("[2-4]\\d\\d");
+        .setComparisonValue("true");
 
     StateExpression stateExpression = new StateExpression()
         .setExpression(critExpression)
@@ -94,6 +94,31 @@ public class TickScriptBuilderTest {
         .setStateExpressions(List.of(stateExpression))
         .setLabelSelector(labelSelectors)
         .setCriticalStateDuration(3);
+
+    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    Assert.assertEquals(expectedString, script);
+  }
+
+  @Test
+  public void testBuildBooleanThreshold() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildBooleanThreshold.tick");
+
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(Comparator.EQUAL_TO)
+        .setComparisonValue(true);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors)
+        .setCriticalStateDuration(2);
 
     String script = tickScriptBuilder.build("tenant", "measurement", tp);
     Assert.assertEquals(expectedString, script);
