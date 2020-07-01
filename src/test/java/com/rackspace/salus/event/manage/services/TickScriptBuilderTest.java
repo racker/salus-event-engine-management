@@ -23,6 +23,8 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import java.io.IOException;
@@ -127,10 +129,22 @@ public class TickScriptBuilderTest {
   public void testBuildMultipleExpressions() throws IOException {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildMultipleExpressions.tick");
 
-    ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
-        .setComparator(Comparator.GREATER_THAN)
-        .setComparisonValue(33);
+    LogicalExpression critExpressionLogic = new LogicalExpression()
+        .setOperator(Operator.OR)
+        .setExpressions(List.of(
+            new ComparisonExpression()
+                .setMetricName("field")
+                .setComparator(Comparator.GREATER_THAN)
+                .setComparisonValue(33),
+            new ComparisonExpression()
+                .setMetricName("test")
+                .setComparator(Comparator.LESS_THAN_OR_EQUAL_TO)
+                .setComparisonValue(17)));
+
+    ComparisonExpression critExpressionComp = new ComparisonExpression()
+        .setMetricName("new_field")
+        .setComparator(Comparator.REGEX_MATCH)
+        .setComparisonValue("my_value");
 
     ComparisonExpression warnExpression = new ComparisonExpression()
         .setMetricName("field")
@@ -144,9 +158,13 @@ public class TickScriptBuilderTest {
 
     List<StateExpression> stateExpressions = List.of(
         new StateExpression()
-            .setExpression(critExpression)
+            .setExpression(critExpressionLogic)
             .setState(TaskState.CRITICAL)
-            .setMessage("critical threshold hit"),
+            .setMessage("logical critical threshold hit"),
+        new StateExpression()
+            .setExpression(critExpressionComp)
+            .setState(TaskState.CRITICAL)
+            .setMessage("comparison critical threshold hit"),
         new StateExpression()
             .setExpression(warnExpression)
             .setState(TaskState.WARNING)

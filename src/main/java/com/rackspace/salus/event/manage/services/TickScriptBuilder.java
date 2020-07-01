@@ -23,6 +23,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparis
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.validators.EvalExpressionValidator;
@@ -130,11 +131,9 @@ public class TickScriptBuilder {
       return null;
     }
 
-    StringBuilder tickExpression = new StringBuilder();
-    for (StateExpression stateExpression : expressions) {
-      tickExpression.append(buildTICKExpression(stateExpression.getExpression()));
-    }
-    return tickExpression.toString();
+    return expressions.stream()
+        .map(expr -> buildTICKExpression(expr.getExpression()))
+        .collect(Collectors.joining(" " + Operator.OR.toString() + " "));
   }
 
   private String buildTICKExpression(Expression expression) {
