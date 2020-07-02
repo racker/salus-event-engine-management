@@ -311,7 +311,7 @@ public class TestEventTaskService {
         .setCriticalStateDuration(null)
         .setWarningStateDuration(null)
         .setInfoStateDuration(null)
-        .setEvalExpressions(taskParameters.getEvalExpressions())
+        .setCustomMetrics(taskParameters.getCustomMetrics())
         .setStateExpressions(taskParameters.getStateExpressions());
   }
 

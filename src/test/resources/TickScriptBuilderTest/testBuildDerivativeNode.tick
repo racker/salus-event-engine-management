@@ -1,0 +1,13 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id')
+  |derivative('metric')
+    .unit(1m)
+    .as('rate_metric')
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .details('task={{.TaskName}}')
+    .history(21)
+    .topic('events')

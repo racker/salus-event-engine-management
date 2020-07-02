@@ -20,26 +20,24 @@ import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.validators.EvalExpressionValidator;
+import com.rackspace.salus.telemetry.model.CustomMetricExpression;
+import com.rackspace.salus.telemetry.model.DerivativeNode;
+import com.rackspace.salus.telemetry.model.EvalNode;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -60,10 +58,6 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
   private final AppProperties appProperties;
-
-  Pattern validRealNumber = Pattern.compile("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$");
-
-  Pattern evalExpression = Pattern.compile(EvalExpressionValidator.functionRegex);
 
   @Autowired
   public TickScriptBuilder(AppProperties appProperties,
@@ -118,8 +112,9 @@ public class TickScriptBuilder {
         .critCount(taskParameters.getCriticalStateDuration() != null ?
             String.format("\"crit_count\" >= %d", taskParameters.getCriticalStateDuration()) : null)
         .flappingDetection(taskParameters.isFlappingDetection())
-        .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
-        .joinedAs(joinAs(taskParameters.getEvalExpressions()))
+        .joinedEvals(joinEvals(taskParameters.getCustomMetrics()))
+        .joinedAs(joinAs(taskParameters.getCustomMetrics()))
+        .derivative(getDerivative(taskParameters.getCustomMetrics()))
         .windowLength(taskParameters.getWindowLength())
         .windowFields(taskParameters.getWindowFields())
         .eventHandlerTopic(eventHandlerTopic)
@@ -180,56 +175,53 @@ public class TickScriptBuilder {
     return tickExpression.toString();
   }
 
-  private boolean isValidRealNumber(String operand) {
-    return validRealNumber.matcher(operand).matches();
-  }
-
-  private String normalize(String operand) {
-    if (isValidRealNumber(operand)) {
-      return operand;
+  public String joinEvals(List<CustomMetricExpression> customMetrics) {
+    if (customMetrics == null) {
+      return null;
     }
-
-    Matcher matcher = evalExpression.matcher(operand);
-
-    //  if operand is not a function call, double quote it
-    if (!matcher.matches()) {
-      // operand doesn't contain function, and thus is a tag/field name requiring double quotes
-      return "\"" + operand + "\"";
-    }
-
-    // Operand is function call, so split out the function parameters, double quoting the tag/fields
-    String parameters = Arrays.stream(matcher.group(2).split(","))
-        .map(String::trim)
-        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
+    String joinedEvals = customMetrics.stream()
+        .filter(EvalNode.class::isInstance)
+        .map(eval -> ((EvalNode) eval).getLambda())
         .collect(Collectors.joining(", "));
 
-    return matcher.group(1) + "(" + parameters + ")";
-  }
-  public String createLambda(EvalExpression evalExpression) {
-    List<String> normalizedOperands = evalExpression.getOperands().stream()
-            .map(this::normalize)
-            .collect(Collectors.toList());
-    
-    return "lambda: " + normalizedOperands.stream()
-            .collect(Collectors.joining(" " + evalExpression.getOperator() + " "));
-  }
-
-  public String joinEvals(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null) {
+    if (joinedEvals.isBlank()) {
       return null;
     }
-    return evalExpressionList.stream()
-            .map(this::createLambda)
-            .collect(Collectors.joining(", "));
+    return joinedEvals;
   }
 
-  public String joinAs(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null) {
+  public String joinAs(List<CustomMetricExpression> customMetrics) {
+    if (customMetrics == null) {
       return null;
     }
-    return evalExpressionList.stream()
-            .map(evalExpression -> "'" + evalExpression.getAs() + "'")
-            .collect(Collectors.joining(", "));
+    String joinedAs = customMetrics.stream()
+        .filter(EvalNode.class::isInstance)
+        .map(eval -> "'" + ((EvalNode) eval).getAs() + "'")
+        .collect(Collectors.joining(", "));
+
+    if (joinedAs.isBlank()) {
+      return null;
+    }
+    return joinedAs;
+  }
+
+  /**
+   * Retrieves the first DerivativeNode seen in the list of custom metrics.
+   *
+   * Per https://github.com/influxdata/kapacitor/issues/2064 it appears that at most two of these
+   * could be provided.  This method currently only handles one.
+   *
+   * @param customMetrics The list of custom metrics to filter DerivativeNodes from.
+   * @return The first derivative node seen.
+   */
+  private DerivativeNode getDerivative(List<CustomMetricExpression> customMetrics) {
+    if (customMetrics == null) {
+      return null;
+    }
+    return (DerivativeNode) customMetrics.stream()
+        .filter(DerivativeNode.class::isInstance)
+        .findFirst()
+        .orElse(null);
   }
 
   @Data @Builder
@@ -261,6 +253,7 @@ public class TickScriptBuilder {
     String groupBy = Tags.RESOURCE_ID;
     String joinedEvals;
     String joinedAs;
+    DerivativeNode derivative;
     String eventHandlerTopic;
   }
 }

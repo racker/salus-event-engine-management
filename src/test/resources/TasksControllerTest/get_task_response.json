@@ -32,7 +32,27 @@
         "message": "critical threshold was hit"
       }
     ],
-    "evalExpressions": null,
+    "customMetrics": [
+      {
+        "type": "percent",
+        "x": "metric1",
+        "y": "metric2",
+        "as": "xyPercent"
+      },
+      {
+        "type": "rate",
+        "metric": "testVal",
+        "duration": "PT2M17S",
+        "as": "new_rate",
+        "nonNegative": false
+      },
+      {
+        "type": "custom",
+        "operands": ["field1", "field2"],
+        "operator": "-",
+        "as": "new_field"
+      }
+    ],
     "windowLength": null,
     "windowFields": null,
     "flappingDetection": false,
