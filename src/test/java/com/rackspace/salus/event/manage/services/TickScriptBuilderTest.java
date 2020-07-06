@@ -26,8 +26,8 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.model.BasicEvalNode;
-import com.rackspace.salus.telemetry.model.CustomMetricExpression;
+import com.rackspace.salus.telemetry.model.CustomEvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.EvalNode;
 import com.rackspace.salus.telemetry.model.PercentageEvalNode;
@@ -293,17 +293,17 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildBasicEvalNode.tick");
 
     List<String> operands1 = Arrays.asList("1.0", "field", "sigma(cpu,1)");
-    EvalNode evalExpression1 = new BasicEvalNode()
+    EvalNode evalExpression1 = new CustomEvalNode()
         .setOperator("+")
         .setOperands(operands1)
         .setAs("as1");
     List<String> operands2 = Arrays.asList("2.0", "tag", "count(field2,1)");
-    EvalNode evalExpression2 = new BasicEvalNode()
+    EvalNode evalExpression2 = new CustomEvalNode()
         .setOperator("-")
         .setOperands(operands2)
         .setAs("as2");
 
-    List<CustomMetricExpression> evalExpressions = new LinkedList<>();
+    List<MetricExpressionBase> evalExpressions = new LinkedList<>();
     evalExpressions.add(evalExpression1);
     evalExpressions.add(evalExpression2);
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setCustomMetrics(evalExpressions);
@@ -316,8 +316,8 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildPercentNode.tick");
 
     EvalNode percentExpression = new PercentageEvalNode()
-        .setX("metric1")
-        .setY("metric2")
+        .setPart("metric1")
+        .setTotal("metric2")
         .setAs("percentage");
 
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setCustomMetrics(List.of(percentExpression));
@@ -439,8 +439,8 @@ public class TickScriptBuilderTest {
     // Create all custom metrics
 
     EvalNode percentExpression = new PercentageEvalNode()
-        .setX("metric1")
-        .setY("metric2")
+        .setPart("metric1")
+        .setTotal("metric2")
         .setAs("percent");
 
     DerivativeNode derivativeNode = new DerivativeNode()
@@ -449,18 +449,18 @@ public class TickScriptBuilderTest {
         .setAs("new_rate");
 
     List<String> operands1 = Arrays.asList("20", "sqrt(number)");
-    EvalNode evalExpression1 = new BasicEvalNode()
+    EvalNode evalExpression1 = new CustomEvalNode()
         .setOperator("-")
         .setOperands(operands1)
         .setAs("sqrt_val");
 
     List<String> operands2 = Arrays.asList("min(field1, field2)", "max(field3, field4)");
-    EvalNode evalExpression2 = new BasicEvalNode()
+    EvalNode evalExpression2 = new CustomEvalNode()
         .setOperator("+")
         .setOperands(operands2)
         .setAs("combined_vals");
 
-    List<CustomMetricExpression> customMetrics = List.of(
+    List<MetricExpressionBase> customMetrics = List.of(
         percentExpression,
         derivativeNode,
         evalExpression1,

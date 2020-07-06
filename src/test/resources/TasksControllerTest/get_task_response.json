@@ -35,8 +35,8 @@
     "customMetrics": [
       {
         "type": "percent",
-        "x": "metric1",
-        "y": "metric2",
+        "part": "metric1",
+        "total": "metric2",
         "as": "xyPercent"
       },
       {

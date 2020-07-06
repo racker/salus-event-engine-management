@@ -58,8 +58,8 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.model.BasicEvalNode;
-import com.rackspace.salus.telemetry.model.CustomMetricExpression;
+import com.rackspace.salus.telemetry.model.CustomEvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
@@ -199,16 +199,16 @@ public class TasksApiControllerTest {
   public void testGetTask_testSerialization() throws Exception {
     String tenantId = "testSerialization";
 
-    List<CustomMetricExpression> customMetrics = List.of(
+    List<MetricExpressionBase> customMetrics = List.of(
         new PercentageEvalNode()
-            .setX("metric1")
-            .setY("metric2")
+            .setPart("metric1")
+            .setTotal("metric2")
             .setAs("xyPercent"),
         new DerivativeNode()
             .setMetric("testVal")
             .setDuration(Duration.ofSeconds(137))
             .setAs("new_rate"),
-        new BasicEvalNode()
+        new CustomEvalNode()
             .setOperator("-")
             .setOperands(List.of("field1", "field2"))
             .setAs("new_field"));
@@ -258,8 +258,8 @@ public class TasksApiControllerTest {
   public void testCreateTask_invalidBasicEvalNode() throws Exception{
     String tenantId = RandomStringUtils.randomAlphabetic( 8 );
 
-    List<CustomMetricExpression> customMetrics = List.of(
-        new BasicEvalNode()
+    List<MetricExpressionBase> customMetrics = List.of(
+        new CustomEvalNode()
             .setOperands(List.of("metric1", "metric2", "invalidFunction(test, blah)"))
             .setOperator("+")
             .setAs("new_metric"));
@@ -279,7 +279,7 @@ public class TasksApiControllerTest {
   public void testCreateTask_tooManyDerivativeNodes() throws Exception{
     String tenantId = RandomStringUtils.randomAlphabetic( 8 );
 
-    List<CustomMetricExpression> customMetrics = List.of(
+    List<MetricExpressionBase> customMetrics = List.of(
         new DerivativeNode()
             .setMetric("metric1")
             .setAs("rate1"),
@@ -430,7 +430,7 @@ public class TasksApiControllerTest {
     return buildCreateTask(setName, null);
   }
 
-  private static CreateTask buildCreateTask(boolean setName, List<CustomMetricExpression> customMetrics) {
+  private static CreateTask buildCreateTask(boolean setName, List<MetricExpressionBase> customMetrics) {
     return new CreateTask()
         .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
@@ -458,7 +458,7 @@ public class TasksApiControllerTest {
 
   }
 
-  private static EventEngineTask buildTask(String tenantId, List<CustomMetricExpression> customMetrics) {
+  private static EventEngineTask buildTask(String tenantId, List<MetricExpressionBase> customMetrics) {
     return new EventEngineTask()
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
         .setKapacitorTaskId("testTaskId")

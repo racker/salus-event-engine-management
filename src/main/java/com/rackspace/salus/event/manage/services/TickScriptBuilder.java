@@ -25,7 +25,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.model.CustomMetricExpression;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.EvalNode;
 import com.samskivert.mustache.Escapers;
@@ -175,7 +175,7 @@ public class TickScriptBuilder {
     return tickExpression.toString();
   }
 
-  public String joinEvals(List<CustomMetricExpression> customMetrics) {
+  public String joinEvals(List<MetricExpressionBase> customMetrics) {
     if (customMetrics == null) {
       return null;
     }
@@ -190,7 +190,7 @@ public class TickScriptBuilder {
     return joinedEvals;
   }
 
-  public String joinAs(List<CustomMetricExpression> customMetrics) {
+  public String joinAs(List<MetricExpressionBase> customMetrics) {
     if (customMetrics == null) {
       return null;
     }
@@ -214,7 +214,7 @@ public class TickScriptBuilder {
    * @param customMetrics The list of custom metrics to filter DerivativeNodes from.
    * @return The first derivative node seen.
    */
-  private DerivativeNode getDerivative(List<CustomMetricExpression> customMetrics) {
+  private DerivativeNode getDerivative(List<MetricExpressionBase> customMetrics) {
     if (customMetrics == null) {
       return null;
     }
