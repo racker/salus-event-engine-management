@@ -58,10 +58,15 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
+import com.rackspace.salus.telemetry.model.CustomEvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
+import com.rackspace.salus.telemetry.model.DerivativeNode;
+import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
 import com.rackspace.salus.telemetry.web.TenantVerification;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -193,7 +198,22 @@ public class TasksApiControllerTest {
   @Test
   public void testGetTask_testSerialization() throws Exception {
     String tenantId = "testSerialization";
-    EventEngineTask task = buildTask(tenantId);
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new PercentageEvalNode()
+            .setPart("metric1")
+            .setTotal("metric2")
+            .setAs("xyPercent"),
+        new DerivativeNode()
+            .setMetric("testVal")
+            .setDuration(Duration.ofSeconds(137))
+            .setAs("new_rate"),
+        new CustomEvalNode()
+            .setOperator("-")
+            .setOperands(List.of("field1", "field2"))
+            .setAs("new_field"));
+
+    EventEngineTask task = buildTask(tenantId, customMetrics);
 
     when(tasksService.getTask(anyString(), any()))
         .thenReturn(Optional.of(task));
@@ -232,6 +252,50 @@ public class TasksApiControllerTest {
 
     verify(tasksService).createTask(tenantId, create);
     verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
+  public void testCreateTask_invalidBasicEvalNode() throws Exception{
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new CustomEvalNode()
+            .setOperands(List.of("metric1", "metric2", "invalidFunction(test, blah)"))
+            .setOperator("+")
+            .setAs("new_metric"));
+
+    CreateTask create = buildCreateTask(true, customMetrics);
+
+    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(status().isBadRequest())
+        .andExpect(validationError("taskParameters.customMetrics[0]",
+            "Invalid custom metric."));
+  }
+
+  @Test
+  public void testCreateTask_tooManyDerivativeNodes() throws Exception{
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new DerivativeNode()
+            .setMetric("metric1")
+            .setAs("rate1"),
+        new DerivativeNode()
+            .setMetric("metric2")
+            .setAs("rate2"));
+
+    CreateTask create = buildCreateTask(true, customMetrics);
+
+    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(status().isBadRequest())
+        .andExpect(validationError("taskParameters.customMetrics",
+            "Using multiple 'rate' metrics is not supported."));
   }
 
   @Test
@@ -363,6 +427,10 @@ public class TasksApiControllerTest {
   }
 
   private static CreateTask buildCreateTask(boolean setName) {
+    return buildCreateTask(setName, null);
+  }
+
+  private static CreateTask buildCreateTask(boolean setName, List<MetricExpressionBase> customMetrics) {
     return new CreateTask()
         .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
@@ -371,6 +439,7 @@ public class TasksApiControllerTest {
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
+                .setCustomMetrics(customMetrics)
                 .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
                     new StateExpression()
@@ -385,6 +454,11 @@ public class TasksApiControllerTest {
   }
 
   private static EventEngineTask buildTask(String tenantId) {
+    return buildTask(tenantId, null);
+
+  }
+
+  private static EventEngineTask buildTask(String tenantId, List<MetricExpressionBase> customMetrics) {
     return new EventEngineTask()
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
         .setKapacitorTaskId("testTaskId")
@@ -417,6 +491,7 @@ public class TasksApiControllerTest {
                                         .setComparisonValue(92)))
                         )
                 ))
+            .setCustomMetrics(customMetrics)
         );
   }
 }

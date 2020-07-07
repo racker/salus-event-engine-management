@@ -1,0 +1,13 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id')
+  |eval(lambda: (float("metric1") / float("metric2")) * 100.0)
+    .as('percentage')
+    .keep()
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .details('task={{.TaskName}}')
+    .history(21)
+    .topic('events')

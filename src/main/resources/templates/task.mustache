@@ -2,6 +2,18 @@ stream
   |from()
     .measurement('{{measurement}}')
     .groupBy('{{groupBy}}')
+{{#labelsAvailable}}
+  |where(lambda:
+  {{#labels}}
+    isPresent("{{key}}") AND ("{{key}}" == '{{value}}')
+    {{^-last}}
+      AND
+    {{/-last}}
+    {{#-last}}
+      )
+    {{/-last}}
+  {{/labels}}
+{{/labelsAvailable}}
 {{#windowLength}}
   |window()
     .period({{windowLength}}m)
@@ -15,23 +27,19 @@ stream
   |mean('{{.}}')
     .as('avg_{{.}}')
 {{/windowFields}}
-{{#labelsAvailable}}
-  |where(lambda:
-  {{#labels}}
-    isPresent("{{key}}") AND ("{{key}}" == '{{value}}')
-    {{^-last}}
-      AND
-    {{/-last}}
-    {{#-last}}
-      )
-    {{/-last}}
-  {{/labels}}
-{{/labelsAvailable}}
 {{#joinedEvals}}
   |eval({{joinedEvals}})
     .as({{joinedAs}})
     .keep()
 {{/joinedEvals}}
+{{#derivative}}
+  |derivative('{{derivative.metric}}')
+    .unit({{derivative.goDuration}})
+    .as('{{derivative.as}}')
+    {{#derivative.nonNegative}}
+    .nonNegative()
+    {{/derivative.nonNegative}}
+{{/derivative}}
 {{#critCount}}
   {{#critExpression}}
   |stateDuration(lambda: {{critExpression}})
