@@ -19,22 +19,25 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.event.common.Tags;
 import com.rackspace.salus.event.manage.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.EvalExpression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
-import com.rackspace.salus.telemetry.validators.EvalExpressionValidator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
+import com.rackspace.salus.telemetry.model.DerivativeNode;
+import com.rackspace.salus.telemetry.model.EvalNode;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
 import com.samskivert.mustache.Template;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -55,10 +58,6 @@ public class TickScriptBuilder {
 
   private final Template taskTemplate;
   private final AppProperties appProperties;
-
-  Pattern validRealNumber = Pattern.compile("^[-+]?([0-9]+(\\.[0-9]+)?|\\.[0-9]+)$");
-
-  Pattern evalExpression = Pattern.compile(EvalExpressionValidator.functionRegex);
 
   @Autowired
   public TickScriptBuilder(AppProperties appProperties,
@@ -92,106 +91,137 @@ public class TickScriptBuilder {
       taskParameters.setLabelSelector(Collections.EMPTY_MAP);
     }
 
+
+    Map<TaskState, List<StateExpression>> expressionsByState = taskParameters.getStateExpressions()
+        .stream()
+        .collect(Collectors.groupingBy(StateExpression::getState));
+
     return taskTemplate.execute(TaskContext.builder()
         .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(String.join(":", idParts))
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .critExpression(buildTICKExpression(taskParameters.getCritical()))
-        .infoExpression(buildTICKExpression(taskParameters.getInfo()))
-        .warnExpression(buildTICKExpression(taskParameters.getWarning()))
-        .infoCount(
-          buildTICKExpression(taskParameters.getInfo(), "\"info_count\" >= %d"))
-        .warnCount(
-          buildTICKExpression(taskParameters.getWarning(), "\"warn_count\" >= %d"))
-        .critCount(
-          buildTICKExpression(taskParameters.getCritical(), "\"crit_count\" >= %d"))
+        .infoExpression(buildTICKExpression(expressionsByState.get(TaskState.INFO)))
+        .warnExpression(buildTICKExpression(expressionsByState.get(TaskState.WARNING)))
+        .critExpression(buildTICKExpression(expressionsByState.get(TaskState.CRITICAL)))
+        .infoCount(taskParameters.getInfoStateDuration() != null ?
+            String.format("\"info_count\" >= %d", taskParameters.getInfoStateDuration()): null)
+        .warnCount(taskParameters.getWarningStateDuration() != null ?
+            String.format("\"warn_count\" >= %d", taskParameters.getWarningStateDuration()): null)
+        .critCount(taskParameters.getCriticalStateDuration() != null ?
+            String.format("\"crit_count\" >= %d", taskParameters.getCriticalStateDuration()) : null)
         .flappingDetection(taskParameters.isFlappingDetection())
-        .joinedEvals(joinEvals(taskParameters.getEvalExpressions()))
-        .joinedAs(joinAs(taskParameters.getEvalExpressions()))
+        .joinedEvals(joinEvals(taskParameters.getCustomMetrics()))
+        .joinedAs(joinAs(taskParameters.getCustomMetrics()))
+        .derivative(getDerivative(taskParameters.getCustomMetrics()))
         .windowLength(taskParameters.getWindowLength())
         .windowFields(taskParameters.getWindowFields())
         .eventHandlerTopic(eventHandlerTopic)
         .build());
   }
 
-  public String buildTICKExpression(LevelExpression expression) {
-    if (expression == null) {
+  public String buildTICKExpression(List<StateExpression> expressions) {
+    if (expressions == null || expressions.isEmpty()) {
       return null;
     }
 
-    String tickExpression = String.format("\"%s\" %s ", expression.getExpression().getField(),
-        expression.getExpression().getComparator());
+    return expressions.stream()
+        .map(expr -> buildTICKExpression(expr.getExpression()))
+        .collect(Collectors.joining(" " + Operator.OR.toString() + " "));
+  }
 
-    Object threshold = expression.getExpression().getThreshold();
-    if (threshold instanceof Number) {
-      tickExpression += (Number) threshold;
-    } else if (threshold instanceof String) {
-      tickExpression += "\"" + (String) threshold + "\"";
+  private String buildTICKExpression(Expression expression) {
+    if (expression instanceof ComparisonExpression) {
+      return buildTICKExpression((ComparisonExpression) expression);
+    } else if (expression instanceof LogicalExpression) {
+      return buildTICKExpression((LogicalExpression) expression);
     } else {
-      log.error("Could not evaluate task threshold from {}", threshold);
+      log.error("Unknown expression type found", expression);
+      return null;
+    }
+  }
+
+  private String buildTICKExpression(LogicalExpression expression) {
+    String logicalOperator = expression.getOperator().toString();
+
+    return "("
+        + expression.getExpressions().stream()
+        .map(this::buildTICKExpression)
+        .collect(Collectors.joining(" " + logicalOperator + " "))
+        + ")";
+  }
+
+  private String buildTICKExpression(ComparisonExpression expression) {
+    StringBuilder tickExpression = new StringBuilder("(");
+    tickExpression.append("\"").append(expression.getMetricName()).append("\"");
+    tickExpression.append(" ");
+    tickExpression.append(expression.getComparator().getFriendlyName());
+    tickExpression.append(" ");
+
+    if (expression.getComparisonValue() instanceof Number) {
+      tickExpression.append(expression.getComparisonValue());
+    } else if (expression.getComparisonValue() instanceof Boolean) {
+      tickExpression.append((Boolean) expression.getComparisonValue() ? "TRUE" : "FALSE");
+    } else if (expression.getComparisonValue() instanceof String) {
+      tickExpression.append("\"").append((String) expression.getComparisonValue()).append("\"");
+    } else {
+      log.error("Could not evaluate task comparison value from {}", expression.getComparisonValue());
       return null;
     }
 
-    return tickExpression;
+    tickExpression.append(")");
+
+    return tickExpression.toString();
   }
 
-  public String buildTICKExpression(LevelExpression levelExpression, String formatString) {
-    return levelExpression != null && levelExpression.getStateDuration() != null ? String.format(formatString, levelExpression.getStateDuration()) :
-        null;
-  }
-
-  private boolean isValidRealNumber(String operand) {
-    return validRealNumber.matcher(operand).matches();
-  }
-
-  private String normalize(String operand) {
-    if (isValidRealNumber(operand)) {
-      return operand;
+  public String joinEvals(List<MetricExpressionBase> customMetrics) {
+    if (customMetrics == null) {
+      return null;
     }
-
-    Matcher matcher = evalExpression.matcher(operand);
-
-    //  if operand is not a function call, double quote it
-    if (!matcher.matches()) {
-      // operand doesn't contain function, and thus is a tag/field name requiring double quotes
-      return "\"" + operand + "\"";
-    }
-
-    // Operand is function call, so split out the function parameters, double quoting the tag/fields
-    String parameters = Arrays.stream(matcher.group(2).split(","))
-        .map(String::trim)
-        .map(p -> isValidRealNumber(p) ? p : "\"" + p + "\"")
+    String joinedEvals = customMetrics.stream()
+        .filter(EvalNode.class::isInstance)
+        .map(eval -> ((EvalNode) eval).getLambda())
         .collect(Collectors.joining(", "));
 
-    return matcher.group(1) + "(" + parameters + ")";
-  }
-  public String createLambda(EvalExpression evalExpression) {
-    List<String> normalizedOperands = evalExpression.getOperands().stream()
-            .map(this::normalize)
-            .collect(Collectors.toList());
-    
-    return "lambda: " + normalizedOperands.stream()
-            .collect(Collectors.joining(" " + evalExpression.getOperator() + " "));
-  }
-
-  public String joinEvals(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null) {
+    if (joinedEvals.isBlank()) {
       return null;
     }
-    return evalExpressionList.stream()
-            .map(this::createLambda)
-            .collect(Collectors.joining(", "));
+    return joinedEvals;
   }
 
-  public String joinAs(List<EvalExpression> evalExpressionList) {
-    if (evalExpressionList == null) {
+  public String joinAs(List<MetricExpressionBase> customMetrics) {
+    if (customMetrics == null) {
       return null;
     }
-    return evalExpressionList.stream()
-            .map(evalExpression -> "'" + evalExpression.getAs() + "'")
-            .collect(Collectors.joining(", "));
+    String joinedAs = customMetrics.stream()
+        .filter(EvalNode.class::isInstance)
+        .map(eval -> "'" + ((EvalNode) eval).getAs() + "'")
+        .collect(Collectors.joining(", "));
+
+    if (joinedAs.isBlank()) {
+      return null;
+    }
+    return joinedAs;
+  }
+
+  /**
+   * Retrieves the first DerivativeNode seen in the list of custom metrics.
+   *
+   * Per https://github.com/influxdata/kapacitor/issues/2064 it appears that at most two of these
+   * could be provided.  This method currently only handles one.
+   *
+   * @param customMetrics The list of custom metrics to filter DerivativeNodes from.
+   * @return The first derivative node seen.
+   */
+  private DerivativeNode getDerivative(List<MetricExpressionBase> customMetrics) {
+    if (customMetrics == null) {
+      return null;
+    }
+    return (DerivativeNode) customMetrics.stream()
+        .filter(DerivativeNode.class::isInstance)
+        .findFirst()
+        .orElse(null);
   }
 
   @Data @Builder
@@ -223,6 +253,7 @@ public class TickScriptBuilder {
     String groupBy = Tags.RESOURCE_ID;
     String joinedEvals;
     String joinedAs;
+    DerivativeNode derivative;
     String eventHandlerTopic;
   }
 }

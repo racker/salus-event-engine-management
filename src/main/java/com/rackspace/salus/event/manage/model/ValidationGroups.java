@@ -16,7 +16,9 @@
 
 package com.rackspace.salus.event.manage.model;
 
+import javax.validation.groups.Default;
+
 public class ValidationGroups {
-  public interface Create{}
-  public interface Test{}
+  public interface Create extends Default { }
+  public interface Test extends Default { }
 }

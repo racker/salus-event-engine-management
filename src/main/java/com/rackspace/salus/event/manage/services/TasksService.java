@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -146,6 +147,10 @@ public class TasksService {
         .setTaskParameters(in.getTaskParameters());
 
     return eventEngineTaskRepository.save(eventEngineTask);
+  }
+
+  public Optional<EventEngineTask> getTask(String tenantId, UUID id) {
+    return eventEngineTaskRepository.findByTenantIdAndId(tenantId, id);
   }
 
   public Page<EventEngineTask> getTasks(String tenantId, Pageable page) {

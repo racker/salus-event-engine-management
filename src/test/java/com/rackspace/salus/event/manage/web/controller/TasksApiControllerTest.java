@@ -16,6 +16,7 @@
 
 package com.rackspace.salus.event.manage.web.controller;
 
+import static com.rackspace.salus.common.util.SpringResourceUtils.readContent;
 import static com.rackspace.salus.test.WebTestUtils.validationError;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.is;
@@ -51,15 +52,26 @@ import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Expression;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LevelExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
+import com.rackspace.salus.telemetry.model.CustomEvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
+import com.rackspace.salus.telemetry.model.DerivativeNode;
+import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
 import com.rackspace.salus.telemetry.web.TenantVerification;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -88,7 +100,7 @@ public class TasksApiControllerTest {
   {
     try {
       classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
-          .addExtraMethod(Expression.class, "podamHelper", String.class);
+          .addExtraMethod(ComparisonExpression.class, "podamHelper", String.class);
     } catch (NoSuchMethodException e) {
       e.printStackTrace();
     }
@@ -184,6 +196,42 @@ public class TasksApiControllerTest {
   }
 
   @Test
+  public void testGetTask_testSerialization() throws Exception {
+    String tenantId = "testSerialization";
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new PercentageEvalNode()
+            .setPart("metric1")
+            .setTotal("metric2")
+            .setAs("xyPercent"),
+        new DerivativeNode()
+            .setMetric("testVal")
+            .setDuration(Duration.ofSeconds(137))
+            .setAs("new_rate"),
+        new CustomEvalNode()
+            .setOperator("-")
+            .setOperands(List.of("field1", "field2"))
+            .setAs("new_field"));
+
+    EventEngineTask task = buildTask(tenantId, customMetrics);
+
+    when(tasksService.getTask(anyString(), any()))
+        .thenReturn(Optional.of(task));
+
+    mockMvc.perform(get("/api/tenant/{tenantId}/tasks/{uuid}", tenantId, task.getId())
+        .contentType(MediaType.APPLICATION_JSON))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(content()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(content().json(
+            readContent("TasksControllerTest/get_task_response.json"), true));
+
+    verify(tasksService).getTask(tenantId, task.getId());
+    verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
   public void testCreateTask() throws Exception{
     EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
     when(tasksService.createTask(anyString(), any()))
@@ -204,6 +252,50 @@ public class TasksApiControllerTest {
 
     verify(tasksService).createTask(tenantId, create);
     verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
+  public void testCreateTask_invalidBasicEvalNode() throws Exception{
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new CustomEvalNode()
+            .setOperands(List.of("metric1", "metric2", "invalidFunction(test, blah)"))
+            .setOperator("+")
+            .setAs("new_metric"));
+
+    CreateTask create = buildCreateTask(true, customMetrics);
+
+    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(status().isBadRequest())
+        .andExpect(validationError("taskParameters.customMetrics[0]",
+            "Invalid custom metric."));
+  }
+
+  @Test
+  public void testCreateTask_tooManyDerivativeNodes() throws Exception{
+    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    List<MetricExpressionBase> customMetrics = List.of(
+        new DerivativeNode()
+            .setMetric("metric1")
+            .setAs("rate1"),
+        new DerivativeNode()
+            .setMetric("metric2")
+            .setAs("rate2"));
+
+    CreateTask create = buildCreateTask(true, customMetrics);
+
+    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(status().isBadRequest())
+        .andExpect(validationError("taskParameters.customMetrics",
+            "Using multiple 'rate' metrics is not supported."));
   }
 
   @Test
@@ -335,28 +427,71 @@ public class TasksApiControllerTest {
   }
 
   private static CreateTask buildCreateTask(boolean setName) {
-    CreateTask task = new CreateTask()
+    return buildCreateTask(setName, null);
+  }
+
+  private static CreateTask buildCreateTask(boolean setName, List<MetricExpressionBase> customMetrics) {
+    return new CreateTask()
+        .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
         .setTaskParameters(
             new EventEngineTaskParameters()
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
-                .setCritical(
-                    new LevelExpression()
-                        .setStateDuration(1)
+                .setCustomMetrics(customMetrics)
+                .setCriticalStateDuration(5)
+                .setStateExpressions(List.of(
+                    new StateExpression()
                         .setExpression(
-                            new Expression()
-                                .setField("usage_user")
-                                .setComparator(">")
-                                .setThreshold(75)
+                            new ComparisonExpression()
+                                .setMetricName("usage_user")
+                                .setComparator(Comparator.GREATER_THAN)
+                                .setComparisonValue(75)
                         )
-                )
-        );
+                    )
+                ));
+  }
 
-    if (setName) {
-      task.setName("this is my name");
-    }
-    return task;
+  private static EventEngineTask buildTask(String tenantId) {
+    return buildTask(tenantId, null);
+
+  }
+
+  private static EventEngineTask buildTask(String tenantId, List<MetricExpressionBase> customMetrics) {
+    return new EventEngineTask()
+        .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+        .setKapacitorTaskId("testTaskId")
+        .setCreatedTimestamp(Instant.EPOCH)
+        .setUpdatedTimestamp(Instant.EPOCH)
+        .setTenantId(tenantId)
+        .setName("my-test-task")
+        .setMeasurement("disk")
+        .setTaskParameters(
+            new EventEngineTaskParameters()
+                .setLabelSelector(
+                    singletonMap("discovered_os", "linux")
+                )
+                .setCriticalStateDuration(5)
+                .setStateExpressions(List.of(
+                    new StateExpression()
+                        .setState(TaskState.CRITICAL)
+                        .setMessage("critical threshold was hit")
+                        .setExpression(
+                            new LogicalExpression()
+                        .setOperator(Operator.OR)
+                        .setExpressions(List.of(
+                                    new ComparisonExpression()
+                                        .setMetricName("usage_user")
+                                        .setComparator(Comparator.GREATER_THAN)
+                                        .setComparisonValue(75),
+                                    new ComparisonExpression()
+                                        .setMetricName("usage_system")
+                                        .setComparator(Comparator.EQUAL_TO)
+                                        .setComparisonValue(92)))
+                        )
+                ))
+            .setCustomMetrics(customMetrics)
+        );
   }
 }
