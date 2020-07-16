@@ -1,7 +1,7 @@
 stream
   |from()
     .measurement('{{measurement}}')
-    .groupBy('{{groupBy}}')
+    .groupBy({{#groupBy}}'{{this}}'{{^-last}}, {{/-last}}{{/groupBy}})
 {{#labelsAvailable}}
   |where(lambda:
   {{#labels}}

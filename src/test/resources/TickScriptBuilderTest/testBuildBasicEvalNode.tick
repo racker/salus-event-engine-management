@@ -1,7 +1,7 @@
 stream
   |from()
     .measurement('measurement')
-    .groupBy('system_resource_id')
+    .groupBy('system_resource_id', 'system_monitor_id', 'system_monitoring_zone')
   |eval(lambda: 1.0 + "field" + sigma("cpu", 1), lambda: 2.0 - "tag" - count("field2", 1))
     .as('as1', 'as2')
     .keep()
