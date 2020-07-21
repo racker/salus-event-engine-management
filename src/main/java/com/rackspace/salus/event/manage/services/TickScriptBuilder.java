@@ -250,7 +250,7 @@ public class TickScriptBuilder {
     @Default
     String details = "";
     @Default
-    String groupBy = Tags.RESOURCE_ID;
+    List<String> groupBy = List.of(Tags.RESOURCE_ID, Tags.MONITOR_ID, Tags.MONITORING_ZONE);
     String joinedEvals;
     String joinedAs;
     DerivativeNode derivative;

@@ -1,7 +1,7 @@
 stream
   |from()
     .measurement('measurement')
-    .groupBy('system_resource_id')
+    .groupBy('system_resource_id', 'system_monitor_id', 'system_monitoring_zone')
   |stateDuration(lambda: ("field" > 33))
     .unit(1m)
     .as('crit_count')
