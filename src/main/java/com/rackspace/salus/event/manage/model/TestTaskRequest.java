@@ -17,14 +17,16 @@
 package com.rackspace.salus.event.manage.model;
 
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
+import java.util.List;
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class TestTaskRequest {
-  @NotNull
-  SimpleNameTagValueMetric metric;
+  @NotEmpty
+  List<SimpleNameTagValueMetric> metrics;
 
   @NotNull @Valid
   CreateTask task;

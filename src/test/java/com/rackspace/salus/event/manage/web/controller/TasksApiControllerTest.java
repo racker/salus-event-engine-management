@@ -59,8 +59,8 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.model.CustomEvalNode;
-import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
@@ -335,7 +335,7 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testTestEventTask() throws Exception{
+  public void testTestEventTask_normal() throws Exception{
     final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
 
     final CreateTask createTask = buildCreateTask(true);
@@ -343,13 +343,13 @@ public class TasksApiControllerTest {
     createTask.setName(null);
     final TestTaskRequest testTaskRequest = new TestTaskRequest()
         .setTask(createTask)
-        .setMetric(
+        .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
             .setName(createTask.getMeasurement())
-        );
+        ));
 
     final TestTaskResult expectedResult = new TestTaskResult()
-        .setEvent(
+        .setEvents(List.of(
             new EventResult()
             .setData(
                 new EventData()
@@ -359,7 +359,7 @@ public class TasksApiControllerTest {
                 ))
             )
             .setLevel("CRITICAL")
-        )
+        ))
         .setStats(
             new Stats()
             .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
@@ -377,9 +377,75 @@ public class TasksApiControllerTest {
 
     mockMvc.perform(asyncDispatch(mvcResult))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.event.level",
+        .andExpect(jsonPath("$.partialResults",
+            equalTo(false)))
+        .andExpect(jsonPath("$.events[0].level",
             equalTo("CRITICAL")))
-        .andExpect(jsonPath("$.event.data.series[0].name",
+        .andExpect(jsonPath("$.events[0].data.series[0].name",
+            equalTo(testTaskRequest.getTask().getMeasurement())))
+        .andExpect(jsonPath("$.stats.node-stats.alert2.crits_triggered",
+            equalTo(1)))
+    ;
+
+    verify(testEventTaskService).performTestTask(tenantId, testTaskRequest);
+
+    verifyNoMoreInteractions(tasksService, testEventTaskService);
+  }
+
+  @Test
+  public void testTestEventTask_partial() throws Exception{
+    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+
+    final CreateTask createTask = buildCreateTask(true);
+    // ...but ensure user doesn't have to name tasks being tested
+    createTask.setName(null);
+    final TestTaskRequest testTaskRequest = new TestTaskRequest()
+        .setTask(createTask)
+        .setMetrics(List.of(
+            // send in two metrics
+            podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
+            .setName(createTask.getMeasurement()),
+            podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
+            .setName(createTask.getMeasurement())
+        ));
+
+    final TestTaskResult expectedResult = new TestTaskResult()
+        // but only get a partial result
+        .setPartialResults(true)
+        // ...of one event
+        .setEvents(List.of(
+            new EventResult()
+            .setData(
+                new EventData()
+                .setSeries(List.of(
+                    new SeriesItem()
+                        .setName(testTaskRequest.getTask().getMeasurement())
+                ))
+            )
+            .setLevel("CRITICAL")
+        ))
+        .setStats(
+            new Stats()
+            .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
+        );
+
+    when(testEventTaskService.performTestTask(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(expectedResult));
+
+    final MvcResult mvcResult = mockMvc.perform(post("/api/tenant/{tenantId}/test-task", tenantId)
+        .content(objectMapper.writeValueAsString(testTaskRequest))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(request().asyncStarted())
+        .andReturn();
+
+    mockMvc.perform(asyncDispatch(mvcResult))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.partialResults",
+            equalTo(true)))
+        .andExpect(jsonPath("$.events[0].level",
+            equalTo("CRITICAL")))
+        .andExpect(jsonPath("$.events[0].data.series[0].name",
             equalTo(testTaskRequest.getTask().getMeasurement())))
         .andExpect(jsonPath("$.stats.node-stats.alert2.crits_triggered",
             equalTo(1)))
@@ -399,10 +465,10 @@ public class TasksApiControllerTest {
     createTask.setName(null);
     final TestTaskRequest testTaskRequest = new TestTaskRequest()
         .setTask(createTask)
-        .setMetric(
+        .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
             .setName(createTask.getMeasurement())
-        );
+        ));
 
     final CompletableFuture<TestTaskResult> completableFuture = new CompletableFuture<>();
     completableFuture.completeExceptionally(new TestTimedOutException("time out", null));

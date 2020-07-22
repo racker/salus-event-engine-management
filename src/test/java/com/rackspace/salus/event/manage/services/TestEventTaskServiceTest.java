@@ -43,6 +43,7 @@ import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
+import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
 import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
 import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.EventData;
 import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.SeriesItem;
@@ -64,6 +65,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -97,8 +99,12 @@ import org.springframework.test.web.client.MockRestServiceServer;
         TestEventTaskProperties.class
     },
     properties = {
+        // lower the kafka logging noise
         "logging.level.kafka=warn",
         "logging.level.org.apache=warn",
+        "logging.level.kafka.server.LogDirFailureChannel=off",
+        "logging.level.kafka.server.ReplicaManager=off",
+        "logging.level.kafka.utils.CoreUtils$=off",
         // allows for either ordering of consumer/producer startup during test setup
         "spring.kafka.listener.missing-topics-fatal=false",
         // tell kafka listener the test-specific topic to use...gets bound into KafkaTopicProperties
@@ -156,16 +162,21 @@ public class TestEventTaskServiceTest {
   @Rule
   public TestName testName = new TestName();
 
-  // TODO test cases:
-  // missing metric name
-  // no values
+  @Before
+  public void setUp() throws Exception {
+    mockServer.reset();
+  }
 
   @Test
-  public void testPerformTestTask_normal()
+  public void testPerformTestTask_single()
       throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
     setupEventEnginePicker();
 
-    final TestTaskRequest request = createTestTaskRequest();
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
     final String measurementName = request.getTask().getMeasurement();
     final String taskId = setupKapacitorTaskId();
 
@@ -175,7 +186,7 @@ public class TestEventTaskServiceTest {
     final Task expectedTaskWithStats = setupMockKapacitorServer(expectedTaskCreate,
         taskId,
         true,
-        false
+        false, List.of("cpu usage=90i")
     );
 
     when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
@@ -193,13 +204,143 @@ public class TestEventTaskServiceTest {
 
     final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
 
+    assertThat(result.isPartialResults()).isFalse();
     assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
 
-    assertThat(result.getEvent()).isNotNull();
-    assertThat(result.getEvent().getLevel()).isEqualTo("CRITICAL");
-    assertThat(result.getEvent().getData()).isNotNull();
-    assertThat(result.getEvent().getData().getSeries()).hasSize(1);
-    assertThat(result.getEvent().getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+    assertThat(result.getEvents()).hasSize(1);
+    final EventResult actualEvent = result.getEvents().get(0);
+    assertThat(actualEvent).isNotNull();
+    assertThat(actualEvent.getLevel()).isEqualTo("CRITICAL");
+    assertThat(actualEvent.getData()).isNotNull();
+    assertThat(actualEvent.getData().getSeries()).hasSize(1);
+    assertThat(actualEvent.getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+
+    verifyEventEnginePicker(request);
+
+    verifyTickScriptBuilder(request);
+
+    mockServer.verify();
+  }
+
+  @Test
+  public void testPerformTestTask_multiple()
+      throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
+    setupEventEnginePicker();
+
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 70L)),
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
+    final String measurementName = request.getTask().getMeasurement();
+    final String taskId = setupKapacitorTaskId();
+
+    final String expectedTaskCreate = JsonTestUtils
+        .readContent("/TestEventTaskServiceTest/task_create_request.json");
+
+    final Task expectedTaskWithStats = setupMockKapacitorServer(expectedTaskCreate,
+        taskId,
+        true,
+        false, List.of("cpu usage=70i", "cpu usage=90i")
+    );
+
+    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+        .thenReturn("Mocked tick script content");
+
+    // Initiate operation
+
+    final CompletableFuture<TestTaskResult> completableResult = testEventTaskService
+        .performTestTask("t-1", request);
+
+    // give kafka consumer a moment to be ready
+    Thread.sleep(500);
+    // Emulate Kapacitor event handler producing event per metric to kafka
+    produceTestResult(taskId, "OK", measurementName);
+    produceTestResult(taskId, "CRITICAL", measurementName);
+
+    // Assertions
+
+    final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
+
+    assertThat(result.isPartialResults()).isFalse();
+    assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
+
+    assertThat(result.getEvents()).hasSize(2);
+    assertThat(result.getEvents().get(0)).isNotNull();
+    assertThat(result.getEvents().get(0).getLevel()).isEqualTo("OK");
+    assertThat(result.getEvents().get(0).getData()).isNotNull();
+    assertThat(result.getEvents().get(0).getData().getSeries()).hasSize(1);
+    assertThat(result.getEvents().get(0).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+    assertThat(result.getEvents().get(1)).isNotNull();
+    assertThat(result.getEvents().get(1).getLevel()).isEqualTo("CRITICAL");
+    assertThat(result.getEvents().get(1).getData()).isNotNull();
+    assertThat(result.getEvents().get(1).getData().getSeries()).hasSize(1);
+    assertThat(result.getEvents().get(1).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+
+    verifyEventEnginePicker(request);
+
+    verifyTickScriptBuilder(request);
+
+    mockServer.verify();
+  }
+
+  @Test
+  public void testPerformTestTask_partial()
+      throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
+    setupEventEnginePicker();
+
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 70L)),
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
+    final String measurementName = request.getTask().getMeasurement();
+    final String taskId = setupKapacitorTaskId();
+
+    final String expectedTaskCreate = JsonTestUtils
+        .readContent("/TestEventTaskServiceTest/task_create_request.json");
+
+    final Task expectedTaskWithStats = setupMockKapacitorServer(expectedTaskCreate,
+        taskId,
+        true,
+        false, List.of("cpu usage=70i", "cpu usage=90i")
+    );
+
+    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+        .thenReturn("Mocked tick script content");
+
+    // Initiate operation
+
+    // shorten the completable future timeout since timeout is expected
+    testEventTaskProperties.setEndToEndTimeout(Duration.ofSeconds(2));
+
+    final CompletableFuture<TestTaskResult> completableResult = testEventTaskService
+        .performTestTask("t-1", request);
+
+    // give kafka consumer a moment to be ready
+    Thread.sleep(500);
+    // Only send one of the two expected results
+    produceTestResult(taskId, "CRITICAL", measurementName);
+
+    // Assertions
+
+    final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
+
+    assertThat(result.isPartialResults()).isTrue();
+    assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
+
+    assertThat(result.getEvents()).hasSize(1);
+    assertThat(result.getEvents().get(0)).isNotNull();
+    assertThat(result.getEvents().get(0).getLevel()).isEqualTo("CRITICAL");
+    assertThat(result.getEvents().get(0).getData()).isNotNull();
+    assertThat(result.getEvents().get(0).getData().getSeries()).hasSize(1);
+    assertThat(result.getEvents().get(0).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
 
     verifyEventEnginePicker(request);
 
@@ -213,13 +354,17 @@ public class TestEventTaskServiceTest {
       throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
     setupEventEnginePicker();
 
-    final TestTaskRequest request = createTestTaskRequest();
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
     final String taskId = setupKapacitorTaskId();
 
     final String expectedTaskCreate = JsonTestUtils
         .readContent("/TestEventTaskServiceTest/task_create_request.json");
 
-    setupMockKapacitorServer(expectedTaskCreate, taskId, false, false);
+    setupMockKapacitorServer(expectedTaskCreate, taskId, true, false, List.of("cpu usage=90i"));
 
     when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
         .thenReturn("Mocked tick script content");
@@ -254,13 +399,17 @@ public class TestEventTaskServiceTest {
       throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
     setupEventEnginePicker();
 
-    final TestTaskRequest request = createTestTaskRequest();
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
     final String taskId = setupKapacitorTaskId();
 
     final String expectedTaskCreate = JsonTestUtils
         .readContent("/TestEventTaskServiceTest/task_create_request.json");
 
-    setupMockKapacitorServer(expectedTaskCreate, taskId, false, true);
+    setupMockKapacitorServer(expectedTaskCreate, taskId, false, true, List.of("cpu usage=90i"));
 
     when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
         .thenReturn("Mocked tick script content");
@@ -293,15 +442,19 @@ public class TestEventTaskServiceTest {
       throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
     setupEventEnginePicker();
 
-    final TestTaskRequest request = createTestTaskRequest();
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
     // test for manual validation of the metric data's name field
-    request.getMetric().setName(null);
+    request.getMetrics().get(0).setName(null);
 
     assertThatThrownBy(() -> {
       testEventTaskService
           .performTestTask("t-1", request);
     }).isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Metric name is required");
+        .hasMessage("Metric name is required on all metrics");
   }
 
   @Test
@@ -309,17 +462,21 @@ public class TestEventTaskServiceTest {
       throws InterruptedException, ExecutionException, TimeoutException, NoPartitionsAvailableException, IOException {
     setupEventEnginePicker();
 
-    final TestTaskRequest request = createTestTaskRequest();
+    final TestTaskRequest request = createTestTaskRequest(List.of(
+        new SimpleNameTagValueMetric()
+            .setName("cpu")
+            .setIvalues(Map.of("usage", 90L))
+    ));
     // test for manual validation of the metric values
-    request.getMetric().setIvalues(Map.of());
-    request.getMetric().setFvalues(Map.of());
-    request.getMetric().setSvalues(Map.of());
+    request.getMetrics().get(0).setIvalues(Map.of());
+    request.getMetrics().get(0).setFvalues(Map.of());
+    request.getMetrics().get(0).setSvalues(Map.of());
 
     assertThatThrownBy(() -> {
       testEventTaskService
           .performTestTask("t-1", request);
     }).isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("At least one metric value is required");
+        .hasMessage("At least one metric value is required on all metrics");
   }
 
   private String setupKapacitorTaskId() {
@@ -344,26 +501,29 @@ public class TestEventTaskServiceTest {
   }
 
   private Task setupMockKapacitorServer(String expectedTaskCreate, String taskId,
-      boolean includeTaskGet, boolean failedMetricWrite)
+                                        boolean includeTaskGet, boolean failedMetricWrite,
+                                        List<String> expectedMetricLines)
       throws JsonProcessingException {
     mockServer.expect(requestTo("http://localhost:0/kapacitor/v1/tasks"))
         .andExpect(method(HttpMethod.POST))
         .andExpect(content().json(expectedTaskCreate))
         .andRespond(withSuccess());
 
-    mockServer.expect(
-        requestToUriTemplate(
-            "http://localhost:0/kapacitor/v1/write?db={taskId}&rp=ingest",
-            taskId
-        )
-    )
-        .andExpect(method(HttpMethod.POST))
-        .andExpect(content().string("cpu usage=90i\n"))
-        .andRespond(
-            failedMetricWrite ?
-                withStatus(HttpStatus.INTERNAL_SERVER_ERROR) :
-                withSuccess()
-        );
+    expectedMetricLines.forEach(line -> {
+      mockServer.expect(
+          requestToUriTemplate(
+              "http://localhost:0/kapacitor/v1/write?db={taskId}&rp=ingest",
+              taskId
+          )
+      )
+          .andExpect(method(HttpMethod.POST))
+          .andExpect(content().string(line+"\n"))
+          .andRespond(
+              failedMetricWrite ?
+                  withStatus(HttpStatus.INTERNAL_SERVER_ERROR) :
+                  withSuccess()
+          );
+    });
 
     Task expectedTaskWithStats = null;
     if (includeTaskGet) {
@@ -413,7 +573,7 @@ public class TestEventTaskServiceTest {
     template.sendDefault(objectMapper.writeValueAsString(kapacitorEvent));
   }
 
-  private TestTaskRequest createTestTaskRequest() {
+  private TestTaskRequest createTestTaskRequest(List<SimpleNameTagValueMetric> metrics) {
     return new TestTaskRequest()
         .setTask(
             new CreateTask()
@@ -436,11 +596,7 @@ public class TestEventTaskServiceTest {
                         )
                 )
         )
-        .setMetric(
-            new SimpleNameTagValueMetric()
-                .setName("cpu")
-                .setIvalues(Map.of("usage", 90L))
-        );
+        .setMetrics(metrics);
   }
 
   private void setupEventEnginePicker() {

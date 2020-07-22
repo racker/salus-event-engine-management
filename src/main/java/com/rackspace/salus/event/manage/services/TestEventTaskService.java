@@ -30,15 +30,18 @@ import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
 import com.rackspace.salus.event.manage.model.kapacitor.DbRp;
 import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
 import com.rackspace.salus.event.manage.model.kapacitor.Task;
+import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
 import com.rackspace.salus.event.manage.model.kapacitor.Task.Type;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -81,8 +84,9 @@ public class TestEventTaskService {
   private final String ourHostName;
   private final RestTemplate restTemplate;
 
-  private final ConcurrentHashMap<String/*correlationId*/, CompletableFuture<TestTaskResult>> pending =
+  private final ConcurrentHashMap<String/*correlationId*/, CompletableFuture<TestTaskResult>> pendingCompletables =
       new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String/*correlationId*/, EventResultCollector> collectedEvents = new ConcurrentHashMap<>();
   private final Timer timerDuration;
   private final Counter counterTimedOut;
   private final Counter counterSuccess;
@@ -92,6 +96,7 @@ public class TestEventTaskService {
   private final Counter counterConsumerIgnored;
   private final Counter counterConsumerConsumed;
   private final Counter counterConsumerMissingId;
+  private final Counter counterFailedToGetStats;
 
   @Autowired
   public TestEventTaskService(EventEnginePicker eventEnginePicker,
@@ -112,13 +117,14 @@ public class TestEventTaskService {
     this.appName = appName;
     this.ourHostName = ourHostName;
 
-    meterRegistry.gaugeMapSize("test-event-tasks.pending", List.of(), pending);
+    meterRegistry.gaugeMapSize("test-event-tasks.pending", List.of(), pendingCompletables);
     timerDuration = meterRegistry.timer("test-event-tasks.duration");
     counterTimedOut = meterRegistry.counter("test-event-tasks.timed-out");
     counterFinishWithException = meterRegistry.counter("test-event-tasks.exception");
     counterSuccess = meterRegistry.counter("test-event-tasks.success");
     counterSetupFailed = meterRegistry.counter("test-event-tasks.setup-failed");
     counterFailedToDelete = meterRegistry.counter("test-event-tasks.failed-to-delete");
+    counterFailedToGetStats = meterRegistry.counter("test-event-tasks.failed-to-get-stats");
 
     counterConsumerConsumed = meterRegistry.counter("test-event-tasks.consumer.consumed");
     counterConsumerMissingId = meterRegistry.counter("test-event-tasks.consumer.missing-id");
@@ -127,46 +133,61 @@ public class TestEventTaskService {
 
   public CompletableFuture<TestTaskResult> performTestTask(String tenantId,
                                                            TestTaskRequest request) {
-    Assert.hasText(request.getMetric().getName(), "Metric name is required");
-    Assert.isTrue(
-
-        hasValues(request.getMetric().getFvalues()) ||
-            hasValues(request.getMetric().getIvalues()) ||
-            hasValues(request.getMetric().getSvalues()),
-        "At least one metric value is required"
-    );
+    final String metricName = assertMetrics(request);
 
     final EngineInstance engineInstance;
     try {
       engineInstance = eventEnginePicker
-          .pickRecipient(tenantId, PICKER_RESOURCE_ID, request.getMetric().getName());
+          .pickRecipient(tenantId, PICKER_RESOURCE_ID, metricName);
     } catch (NoPartitionsAvailableException e) {
       throw new IllegalStateException("Unable to locate kapacitor instance", e);
     }
 
     final String taskId =
         taskIdGenerator.generateTaskId(
-            tenantId, TASK_ID_PREFIX +request.getMetric().getName()
+            tenantId, TASK_ID_PREFIX +metricName
         ).getKapacitorTaskId();
 
-    createTask(tenantId, request, engineInstance, taskId);
+    createTask(tenantId, request, metricName, engineInstance, taskId);
 
     final CompletableFuture<TestTaskResult> result = new CompletableFuture<TestTaskResult>()
         .orTimeout(testEventTaskProperties.getEndToEndTimeout().getSeconds(), TimeUnit.SECONDS);
 
-    pending.put(taskId, result);
+    pendingCompletables.put(taskId, result);
+    collectedEvents.put(taskId, new EventResultCollector(result, request.getMetrics().size()));
 
     final CompletableFuture<TestTaskResult> interceptedResult = result.handle(
         handleTestTaskCompletion(engineInstance, taskId)
     );
 
     try {
-      postMetric(request, engineInstance, taskId);
+      postMetrics(request, engineInstance, taskId);
     } catch (Exception e) {
       result.completeExceptionally(e);
     }
 
     return interceptedResult;
+  }
+
+  private String assertMetrics(TestTaskRequest request) {
+    String metricName = null;
+    for (SimpleNameTagValueMetric metric : request.getMetrics()) {
+      Assert.hasText(metric.getName(), "Metric name is required on all metrics");
+      if (metricName == null) {
+        metricName = metric.getName();
+      } else {
+        Assert.isTrue(metricName.equals(metric.getName()), "All metric names must be the same");
+      }
+
+      Assert.isTrue(
+          hasValues(metric.getFvalues()) ||
+              hasValues(metric.getIvalues()) ||
+              hasValues(metric.getSvalues()),
+          "At least one metric value is required on all metrics"
+      );
+    }
+
+    return metricName;
   }
 
   private static boolean hasValues(Map<String, ?> values) {
@@ -179,27 +200,38 @@ public class TestEventTaskService {
 
     return (testTaskResult, throwable) -> {
       timerDuration.record(Duration.between(startTime, Instant.now()));
-      pending.remove(taskId);
-      if (throwable == null) {
-        // completed successfully, so augment with stats tracked by kapacitor
 
-        log.debug("Got test-task result={} id={}", testTaskResult, taskId);
+      final EventResultCollector collected = collectedEvents.remove(taskId);
+      final List<EventResult> partialEvents = collected.getEvents();
+      pendingCompletables.remove(taskId);
+
+      log.debug("Handling result={}, partialEvents={}, throwable={}",
+          testTaskResult, partialEvents, throwable);
+
+      Stats taskStats = null;
+      if (throwable == null || throwable instanceof TimeoutException) {
+        // ... a timeout could involve partial results, so it's still interesting to see task stats
         try {
-          testTaskResult.setStats(
-              getTaskStats(engineInstance, taskId)
-          );
+          taskStats = getTaskStats(engineInstance, taskId);
         } catch (Exception e) {
           log.warn("Failed to retrieve stats for task with id={} from instance={}",
               taskId, engineInstance, e);
+          counterFailedToGetStats.increment();
         }
-      } else {
-        log.debug("Got exception={} for test-task id={}", throwable.getMessage(), taskId);
       }
+
       deleteTask(engineInstance, taskId);
 
       if (throwable instanceof TimeoutException) {
         counterTimedOut.increment();
-        throw new TestTimedOutException("Timed out waiting for test-event-task result", throwable);
+        if (partialEvents.isEmpty()) {
+          throw new TestTimedOutException("Timed out waiting for test-event-task result", throwable);
+        } else {
+          return new TestTaskResult()
+              .setPartialResults(true)
+              .setEvents(partialEvents)
+              .setStats(taskStats);
+        }
       } else if (throwable != null) {
         log.warn("Test-task with id={} completed with unexpected exception", taskId, throwable);
         counterFinishWithException.increment();
@@ -210,6 +242,7 @@ public class TestEventTaskService {
           throw new IllegalStateException("Unexpected exception during test-event-task", throwable);
         }
       } else {
+        testTaskResult.setStats(taskStats);
         counterSuccess.increment();
         return testTaskResult;
       }
@@ -218,9 +251,9 @@ public class TestEventTaskService {
   }
 
   private void createTask(String tenantId, TestTaskRequest request,
-                          EngineInstance engineInstance, String taskId) {
+                          String metricName, EngineInstance engineInstance, String taskId) {
     final String tickScript = tickScriptBuilder
-        .build(tenantId, request.getMetric().getName(),
+        .build(tenantId, metricName,
             simplifyTask(request.getTask().getTaskParameters()),
             testEventTaskProperties.getEventHandlerTopic(),
             List.of(TickScriptBuilder.ID_PART_TASK_NAME)
@@ -315,18 +348,23 @@ public class TestEventTaskService {
         .setStateExpressions(taskParameters.getStateExpressions());
   }
 
-  private void postMetric(TestTaskRequest request, EngineInstance engineInstance,
+  private void postMetrics(TestTaskRequest request, EngineInstance engineInstance, String taskId) {
+    request.getMetrics()
+        .forEach(metric -> postMetric(metric, engineInstance, taskId));
+  }
+
+  private void postMetric(SimpleNameTagValueMetric metric, EngineInstance engineInstance,
                           String taskId) {
 
-    final Builder pointBuilder = Point.measurement(request.getMetric().getName());
-    if (request.getMetric().getFvalues() != null) {
-      request.getMetric().getFvalues().forEach(pointBuilder::addField);
+    final Builder pointBuilder = Point.measurement(metric.getName());
+    if (metric.getFvalues() != null) {
+      metric.getFvalues().forEach(pointBuilder::addField);
     }
-    if (request.getMetric().getIvalues() != null) {
-      request.getMetric().getIvalues().forEach(pointBuilder::addField);
+    if (metric.getIvalues() != null) {
+      metric.getIvalues().forEach(pointBuilder::addField);
     }
-    if (request.getMetric().getSvalues() != null) {
-      request.getMetric().getSvalues().forEach(pointBuilder::addField);
+    if (metric.getSvalues() != null) {
+      metric.getSvalues().forEach(pointBuilder::addField);
     }
 
     final Point point = pointBuilder.build();
@@ -397,17 +435,14 @@ public class TestEventTaskService {
     final String taskId = event.getId();
     if (taskId != null) {
       // is it in our pending map?
-      final CompletableFuture<TestTaskResult> result = pending.get(taskId);
-      if (result != null) {
+      final EventResultCollector collected = collectedEvents.get(taskId);
+      if (collected != null) {
         counterConsumerConsumed.increment();
         log.debug("Processing result for test-task={} from event={}", taskId, event);
-        result.complete(
-            new TestTaskResult()
-                .setEvent(
-                    new EventResult()
-                        .setLevel(event.getLevel())
-                        .setData(event.getData())
-                )
+        collected.add(
+            new EventResult()
+                .setLevel(event.getLevel())
+                .setData(event.getData())
         );
       } else {
         counterConsumerIgnored.increment();
@@ -416,6 +451,35 @@ public class TestEventTaskService {
     } else {
       counterConsumerMissingId.increment();
       log.warn("Task-task-result is missing id: {}", event);
+    }
+  }
+
+  /**
+   * Coordinates the collection of consumed {@link EventResult}s and completing the associated
+   * future when the expected count of those has been collected.
+   */
+  static class EventResultCollector {
+    private final CompletableFuture<TestTaskResult> pendingResult;
+    private final int expectedCount;
+    final List<EventResult> events = new ArrayList<>();
+
+    EventResultCollector(CompletableFuture<TestTaskResult> pendingResult, int expectedCount) {
+      this.pendingResult = pendingResult;
+      this.expectedCount = expectedCount;
+    }
+
+    public synchronized void add(EventResult event) {
+        events.add(event);
+        if (events.size() >= expectedCount) {
+          pendingResult.complete(
+              new TestTaskResult()
+                  .setEvents(events)
+          );
+        }
+    }
+
+    public synchronized List<EventResult> getEvents() {
+      return events;
     }
   }
 }
