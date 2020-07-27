@@ -27,9 +27,9 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.model.CustomEvalNode;
-import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.EvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import java.io.IOException;
 import java.time.Duration;
@@ -75,7 +75,7 @@ public class TickScriptBuilderTest {
         .setLabelSelector(labelSelectors)
         .setCriticalStateDuration(5);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -100,7 +100,7 @@ public class TickScriptBuilderTest {
         .setLabelSelector(labelSelectors)
         .setCriticalStateDuration(3);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -125,7 +125,7 @@ public class TickScriptBuilderTest {
         .setLabelSelector(labelSelectors)
         .setCriticalStateDuration(2);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -150,7 +150,35 @@ public class TickScriptBuilderTest {
         .setInfoStateDuration(5)
         .setLabelSelector(labelSelectors);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
+    Assert.assertEquals(expectedString, script);
+
+  }
+
+  @Test
+  public void testBuildNoStateChangesOnly() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testBuildNoStateChangesOnly.tick");
+
+    ComparisonExpression infoExpression = new ComparisonExpression()
+        .setMetricName("field")
+        .setComparator(Comparator.GREATER_THAN)
+        .setComparisonValue(33);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(infoExpression)
+        .setState(TaskState.INFO)
+        .setMessage("Thresholds returned to normal");
+
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors);
+
+    String script = tickScriptBuilder.build("measurement", tp,
+        "test-event-task",
+        List.of(TickScriptBuilder.ID_PART_TASK_NAME),
+        false);
     Assert.assertEquals(expectedString, script);
 
   }
@@ -213,7 +241,7 @@ public class TickScriptBuilderTest {
         .setCriticalStateDuration(5)
         .setLabelSelector(labelSelectors);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -235,7 +263,7 @@ public class TickScriptBuilderTest {
         .setStateExpressions(List.of(stateExpression))
         .setCriticalStateDuration(5);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -258,7 +286,7 @@ public class TickScriptBuilderTest {
         .setLabelSelector(Collections.EMPTY_MAP)
         .setCriticalStateDuration(5);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -284,7 +312,7 @@ public class TickScriptBuilderTest {
         .setLabelSelector(labelSelectors)
         .setCriticalStateDuration(5);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -307,7 +335,7 @@ public class TickScriptBuilderTest {
     evalExpressions.add(evalExpression1);
     evalExpressions.add(evalExpression2);
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setCustomMetrics(evalExpressions);
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -321,7 +349,7 @@ public class TickScriptBuilderTest {
         .setAs("percentage");
 
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setCustomMetrics(List.of(percentExpression));
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -334,7 +362,7 @@ public class TickScriptBuilderTest {
         .setAs("rate_metric");
 
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setCustomMetrics(List.of(derivativeNode));
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -343,7 +371,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildWindow.tick");
     List<String> windowFields = Arrays.asList("field1", "field2");
     EventEngineTaskParameters tp = new EventEngineTaskParameters().setWindowFields(windowFields).setWindowLength(8);
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -368,7 +396,7 @@ public class TickScriptBuilderTest {
         .setStateExpressions(List.of(stateExpression))
         .setLabelSelector(labelSelectors);
 
-    String script = tickScriptBuilder.build("tenant", "measurement", tp);
+    String script = tickScriptBuilder.build("measurement", tp);
     Assert.assertEquals(expectedString, script);
   }
 
@@ -484,7 +512,7 @@ public class TickScriptBuilderTest {
         .setWindowFields(List.of("wField1", "wField2"))
         .setWindowLength(12);
 
-    String script = tickScriptBuilder.build("myTenantId", "new_measurement", tp);
+    String script = tickScriptBuilder.build("new_measurement", tp);
 
     Assert.assertEquals(expectedString, script);
   }

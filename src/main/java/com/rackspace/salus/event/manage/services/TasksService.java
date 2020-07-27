@@ -80,7 +80,7 @@ public class TasksService {
             .setDb(tenantId)
             .setRp(InfluxScope.INGEST_RETENTION_POLICY)
             ))
-        .setScript(tickScriptBuilder.build(tenantId, in.getMeasurement(), in.getTaskParameters()))
+        .setScript(tickScriptBuilder.build(in.getMeasurement(), in.getTaskParameters()))
         .setStatus(Status.enabled);
 
     final List<EngineInstance> applied = new ArrayList<>();

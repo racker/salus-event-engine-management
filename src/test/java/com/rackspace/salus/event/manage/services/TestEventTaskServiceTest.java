@@ -20,6 +20,8 @@ import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -189,7 +191,7 @@ public class TestEventTaskServiceTest {
         false, List.of("cpu usage=90i")
     );
 
-    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -247,7 +249,7 @@ public class TestEventTaskServiceTest {
         false, List.of("cpu usage=70i", "cpu usage=90i")
     );
 
-    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -312,7 +314,7 @@ public class TestEventTaskServiceTest {
         false, List.of("cpu usage=70i", "cpu usage=90i")
     );
 
-    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -366,7 +368,7 @@ public class TestEventTaskServiceTest {
 
     setupMockKapacitorServer(expectedTaskCreate, taskId, true, false, List.of("cpu usage=90i"));
 
-    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -411,7 +413,7 @@ public class TestEventTaskServiceTest {
 
     setupMockKapacitorServer(expectedTaskCreate, taskId, false, true, List.of("cpu usage=90i"));
 
-    when(tickScriptBuilder.build(any(), any(), any(), any(), any()))
+    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -488,7 +490,7 @@ public class TestEventTaskServiceTest {
   }
 
   private void verifyTickScriptBuilder(TestTaskRequest request) {
-    verify(tickScriptBuilder).build(eq("t-1"), eq(request.getTask().getMeasurement()),
+    verify(tickScriptBuilder).build(eq(request.getTask().getMeasurement()),
         argThat(params -> {
           // spot check individual parts
           assertThat(params.getStateExpressions())
@@ -496,7 +498,8 @@ public class TestEventTaskServiceTest {
           return true;
         }),
         eq(testEventTaskProperties.getEventHandlerTopic()),
-        eq(List.of(TickScriptBuilder.ID_PART_TASK_NAME))
+        eq(List.of(TickScriptBuilder.ID_PART_TASK_NAME)),
+        eq(false)
     );
   }
 

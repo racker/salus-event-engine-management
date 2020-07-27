@@ -25,9 +25,9 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.EvalNode;
+import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Mustache.Compiler;
@@ -72,17 +72,18 @@ public class TickScriptBuilder {
     }
   }
 
-  public String build(String tenantId, String measurement,
+  public String build(String measurement,
                       EventEngineTaskParameters taskParameters) {
-    return build(tenantId, measurement, taskParameters, appProperties.getEventHandlerTopic(),
-        List.of(ID_PART_TASK_NAME, ID_PART_GROUP));
+    return build(
+        measurement, taskParameters, appProperties.getEventHandlerTopic(),
+        List.of(ID_PART_TASK_NAME, ID_PART_GROUP), true
+    );
   }
 
-  public String build(String tenantId,
-                      String measurement,
+  public String build(String measurement,
                       EventEngineTaskParameters taskParameters,
                       String eventHandlerTopic,
-                      List<String> idParts) {
+                      List<String> idParts, boolean stateChangesOnly) {
     boolean labelsAvailable = false;
     if(taskParameters.getLabelSelector() != null && !taskParameters.getLabelSelector().isEmpty()) {
       labelsAvailable = true;
@@ -112,6 +113,7 @@ public class TickScriptBuilder {
         .critCount(taskParameters.getCriticalStateDuration() != null ?
             String.format("\"crit_count\" >= %d", taskParameters.getCriticalStateDuration()) : null)
         .flappingDetection(taskParameters.isFlappingDetection())
+        .stateChangesOnly(stateChangesOnly)
         .joinedEvals(joinEvals(taskParameters.getCustomMetrics()))
         .joinedAs(joinAs(taskParameters.getCustomMetrics()))
         .derivative(getDerivative(taskParameters.getCustomMetrics()))
@@ -229,6 +231,8 @@ public class TickScriptBuilder {
     Set<Map.Entry<String, String>> labels;
     boolean labelsAvailable;
     boolean flappingDetection;
+    @Default
+    boolean stateChangesOnly = true;
     String measurement;
     String alertId;
     String critCount;

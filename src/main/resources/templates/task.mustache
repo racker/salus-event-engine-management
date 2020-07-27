@@ -62,7 +62,9 @@ stream
   {{/infoExpression}}
 {{/infoCount}}
   |alert()
+{{#stateChangesOnly}}
     .stateChangesOnly()
+{{/stateChangesOnly}}
     .id('{{alertId}}')
     .details('{{details}}')
 {{#infoCount}}

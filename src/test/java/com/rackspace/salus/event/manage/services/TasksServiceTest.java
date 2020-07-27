@@ -115,7 +115,7 @@ public class TasksServiceTest {
         .thenReturn(taskId
         );
 
-    when(tickScriptBuilder.build(any(), any(), any()))
+    when(tickScriptBuilder.build(any(), any()))
         .thenReturn("built script");
 
     when(eventEnginePicker.pickAll())
@@ -151,7 +151,7 @@ public class TasksServiceTest {
 
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
-    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+    verify(tickScriptBuilder).build("cpu", taskIn.getTaskParameters());
 
     verify(eventEnginePicker).pickAll();
 
@@ -197,7 +197,7 @@ public class TasksServiceTest {
         .thenReturn(taskId
         );
 
-    when(tickScriptBuilder.build(any(), any(), any()))
+    when(tickScriptBuilder.build(any(), any()))
         .thenReturn("built script");
 
     when(eventEnginePicker.pickAll())
@@ -241,7 +241,7 @@ public class TasksServiceTest {
 
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
-    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+    verify(tickScriptBuilder).build("cpu", taskIn.getTaskParameters());
 
     verify(eventEnginePicker).pickAll();
 
@@ -283,7 +283,7 @@ public class TasksServiceTest {
 
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
-    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+    verify(tickScriptBuilder).build("cpu", taskIn.getTaskParameters());
 
     verify(eventEnginePicker).pickAll();
 
@@ -307,7 +307,7 @@ public class TasksServiceTest {
         .thenReturn(taskId
         );
 
-    when(tickScriptBuilder.build(any(), any(), any()))
+    when(tickScriptBuilder.build(any(), any()))
         .thenReturn("built script");
 
     when(eventEnginePicker.pickAll())
@@ -342,7 +342,7 @@ public class TasksServiceTest {
 
     verify(kapacitorTaskIdGenerator).generateTaskId("t-1", "cpu");
 
-    verify(tickScriptBuilder).build("t-1", "cpu", taskIn.getTaskParameters());
+    verify(tickScriptBuilder).build("cpu", taskIn.getTaskParameters());
 
     verify(eventEnginePicker).pickAll();
 

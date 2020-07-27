@@ -1,0 +1,13 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id', 'system_monitor_id', 'system_monitoring_zone')
+  |where(lambda:
+    isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
+      )
+  |alert()
+    .id('{{ .TaskName }}')
+    .details('task={{.TaskName}}')
+    .info(lambda: ("field" > 33))
+    .history(21)
+    .topic('test-event-task')

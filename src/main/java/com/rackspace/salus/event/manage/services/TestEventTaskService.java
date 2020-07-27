@@ -148,7 +148,7 @@ public class TestEventTaskService {
             tenantId, TASK_ID_PREFIX +metricName
         ).getKapacitorTaskId();
 
-    createTask(tenantId, request, metricName, engineInstance, taskId);
+    createTask(request, metricName, engineInstance, taskId);
 
     final CompletableFuture<TestTaskResult> result = new CompletableFuture<TestTaskResult>()
         .orTimeout(testEventTaskProperties.getEndToEndTimeout().getSeconds(), TimeUnit.SECONDS);
@@ -250,13 +250,15 @@ public class TestEventTaskService {
 
   }
 
-  private void createTask(String tenantId, TestTaskRequest request,
+  private void createTask(TestTaskRequest request,
                           String metricName, EngineInstance engineInstance, String taskId) {
     final String tickScript = tickScriptBuilder
-        .build(tenantId, metricName,
+        .build(
+            metricName,
             simplifyTask(request.getTask().getTaskParameters()),
             testEventTaskProperties.getEventHandlerTopic(),
-            List.of(TickScriptBuilder.ID_PART_TASK_NAME)
+            List.of(TickScriptBuilder.ID_PART_TASK_NAME),
+            false
         );
 
     final Task task = new Task()
