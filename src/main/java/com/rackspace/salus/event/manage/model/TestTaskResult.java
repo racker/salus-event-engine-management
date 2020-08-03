@@ -18,8 +18,8 @@ package com.rackspace.salus.event.manage.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
-import com.rackspace.salus.event.manage.model.kapacitor.Task;
+import com.rackspace.salus.event.model.kapacitor.KapacitorEvent;
+import com.rackspace.salus.event.model.kapacitor.Task;
 import java.util.List;
 import lombok.Data;
 
