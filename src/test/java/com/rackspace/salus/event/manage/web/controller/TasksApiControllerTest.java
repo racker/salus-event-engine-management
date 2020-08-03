@@ -511,7 +511,7 @@ public class TasksApiControllerTest {
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setMetricName("usage_user")
+                                .setValueName("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
@@ -548,11 +548,11 @@ public class TasksApiControllerTest {
                         .setOperator(Operator.OR)
                         .setExpressions(List.of(
                                     new ComparisonExpression()
-                                        .setMetricName("usage_user")
+                                        .setValueName("usage_user")
                                         .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(75),
                                     new ComparisonExpression()
-                                        .setMetricName("usage_system")
+                                        .setValueName("usage_system")
                                         .setComparator(Comparator.EQUAL_TO)
                                         .setComparisonValue(92)))
                         )
