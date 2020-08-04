@@ -18,15 +18,18 @@ package com.rackspace.salus.event.manage.config;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties("salus.event-engine-management.test-event-task")
 @Component
 @Data
+@Validated
 public class TestEventTaskProperties {
 
   /**
@@ -40,5 +43,6 @@ public class TestEventTaskProperties {
    * References the topic name of the deployed kafka event handler for test-event-tasks.
    * This is different than the kafka topic where the events are produced.
    */
+  @NotBlank
   String eventHandlerTopic = "test-event-task";
 }
