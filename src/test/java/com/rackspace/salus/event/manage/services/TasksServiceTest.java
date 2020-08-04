@@ -12,6 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.rackspace.salus.event.manage.services;
@@ -66,6 +67,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.ResourceAccessException;
@@ -459,6 +461,42 @@ public class TasksServiceTest {
 
     final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
     assertThat(retrieved).isPresent();
+
+    mockKapacitorServer.verify();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+  }
+
+  @Test
+  public void testDeleteAllTasksForTenant() {
+    final UUID taskDbId = UUID.randomUUID();
+
+    saveTask(taskDbId);
+    saveTask(UUID.randomUUID());
+
+    when(eventEnginePicker.pickAll())
+        .thenReturn(Arrays.asList(
+            new EngineInstance("host", 1000, 0),
+            new EngineInstance("host", 1001, 1)
+        ));
+
+    mockKapacitorServer
+        .expect(ExpectedCount.times(2), requestTo("http://host:1000/kapacitor/v1/tasks/k-1"))
+        .andExpect(method(HttpMethod.DELETE))
+        .andRespond(withNoContent());
+    mockKapacitorServer
+        .expect(ExpectedCount.times(2), requestTo("http://host:1001/kapacitor/v1/tasks/k-1"))
+        .andExpect(method(HttpMethod.DELETE))
+        .andRespond(withNoContent());
+
+    tasksService.deleteAllTasksForTenant("t-1");
+
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
+    assertThat(retrieved).isEmpty();
+
+    verify(eventEnginePicker).pickAll();
 
     mockKapacitorServer.verify();
 
