@@ -183,6 +183,7 @@
               <classifier>client</classifier>
               <includes>
                 <include>**/model/**</include>
+                <include>**/web/client/**</include>
               </includes>
             </configuration>
           </execution>
