@@ -591,7 +591,7 @@ public class TestEventTaskServiceTest {
                             new StateExpression()
                                 .setExpression(
                                     new ComparisonExpression()
-                                        .setMetricName("usage")
+                                        .setValueName("usage")
                                         .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(80)
                                 )

@@ -156,7 +156,7 @@ public class TickScriptBuilder {
 
   private String buildTICKExpression(ComparisonExpression expression) {
     StringBuilder tickExpression = new StringBuilder("(");
-    tickExpression.append("\"").append(expression.getMetricName()).append("\"");
+    tickExpression.append("\"").append(expression.getValueName()).append("\"");
     tickExpression.append(" ");
     tickExpression.append(expression.getComparator().getFriendlyName());
     tickExpression.append(" ");

@@ -59,7 +59,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNumberThreshold.tick");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(0);
 
@@ -84,7 +84,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildStringThreshold.tick");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("code")
+        .setValueName("code")
         .setComparator(Comparator.NOT_REGEX_MATCH)
         .setComparisonValue("true");
 
@@ -109,7 +109,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildBooleanThreshold.tick");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.EQUAL_TO)
         .setComparisonValue(true);
 
@@ -134,7 +134,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildOnlyInfo.tick");
 
     ComparisonExpression infoExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -160,7 +160,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoStateChangesOnly.tick");
 
     ComparisonExpression infoExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -191,26 +191,26 @@ public class TickScriptBuilderTest {
         .setOperator(Operator.OR)
         .setExpressions(List.of(
             new ComparisonExpression()
-                .setMetricName("field")
+                .setValueName("field")
                 .setComparator(Comparator.GREATER_THAN)
                 .setComparisonValue(33),
             new ComparisonExpression()
-                .setMetricName("test")
+                .setValueName("test")
                 .setComparator(Comparator.LESS_THAN_OR_EQUAL_TO)
                 .setComparisonValue(17)));
 
     ComparisonExpression critExpressionComp = new ComparisonExpression()
-        .setMetricName("new_field")
+        .setValueName("new_field")
         .setComparator(Comparator.REGEX_MATCH)
         .setComparisonValue("my_value");
 
     ComparisonExpression warnExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(30);
 
     ComparisonExpression infoExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(20);
 
@@ -250,7 +250,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -272,7 +272,7 @@ public class TickScriptBuilderTest {
     String expectedString = readContent("/TickScriptBuilderTest/testBuildNoLabels.tick");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -298,7 +298,7 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_env", "prod");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -383,7 +383,7 @@ public class TickScriptBuilderTest {
     labelSelectors.put("resource_metadata_env", "prod");
 
     ComparisonExpression critExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(33);
 
@@ -413,31 +413,31 @@ public class TickScriptBuilderTest {
         .setOperator(Operator.AND)
         .setExpressions(List.of(
             new ComparisonExpression()
-                .setMetricName("field")
+                .setValueName("field")
                 .setComparator(Comparator.GREATER_THAN)
                 .setComparisonValue(33),
             new ComparisonExpression()
-                .setMetricName("test")
+                .setValueName("test")
                 .setComparator(Comparator.NOT_EQUAL_TO)
                 .setComparisonValue(17)));
 
     ComparisonExpression critExpressionComp = new ComparisonExpression()
-        .setMetricName("new_field")
+        .setValueName("new_field")
         .setComparator(Comparator.REGEX_MATCH)
         .setComparisonValue("my_value");
 
     ComparisonExpression warnExpression1 = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(30);
 
     ComparisonExpression warnExpression2 = new ComparisonExpression()
-        .setMetricName("false")
+        .setValueName("false")
         .setComparator(Comparator.EQUAL_TO)
         .setComparisonValue(false);
 
     ComparisonExpression infoExpression = new ComparisonExpression()
-        .setMetricName("field")
+        .setValueName("field")
         .setComparator(Comparator.GREATER_THAN)
         .setComparisonValue(20);
 
