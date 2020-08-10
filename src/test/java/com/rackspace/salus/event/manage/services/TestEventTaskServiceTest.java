@@ -45,7 +45,7 @@ import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
-import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.EventData;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.SeriesItem;
@@ -111,7 +111,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
         "spring.kafka.listener.missing-topics-fatal=false",
         // tell kafka listener the test-specific topic to use...gets bound into KafkaTopicProperties
         "salus.kafka.topics.testEventTaskResults=" + TestEventTaskServiceTest.RESULTS_TOPIC,
-        "salus.event-engine-management.test-event-task.eventHandlerTopic=" + TestEventTaskServiceTest.EVENT_HANDLER_TOPIC
+        "salus.event-engine-management.test-event-task.eventHandlerTopic="
+            + TestEventTaskServiceTest.EVENT_HANDLER_TOPIC
 
     }
 )
@@ -206,11 +207,11 @@ public class TestEventTaskServiceTest {
 
     final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
 
-    assertThat(result.isPartialResults()).isFalse();
-    assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
+    assertThat(result.getErrors()).isNullOrEmpty();
+    assertThat(result.getData().getStats()).isEqualTo(expectedTaskWithStats.getStats());
 
-    assertThat(result.getEvents()).hasSize(1);
-    final EventResult actualEvent = result.getEvents().get(0);
+    assertThat(result.getData().getEvents()).hasSize(1);
+    final EventResult actualEvent = result.getData().getEvents().get(0);
     assertThat(actualEvent).isNotNull();
     assertThat(actualEvent.getLevel()).isEqualTo("CRITICAL");
     assertThat(actualEvent.getData()).isNotNull();
@@ -267,20 +268,22 @@ public class TestEventTaskServiceTest {
 
     final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
 
-    assertThat(result.isPartialResults()).isFalse();
-    assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
+    assertThat(result.getErrors()).isNullOrEmpty();
+    assertThat(result.getData().getStats()).isEqualTo(expectedTaskWithStats.getStats());
 
-    assertThat(result.getEvents()).hasSize(2);
-    assertThat(result.getEvents().get(0)).isNotNull();
-    assertThat(result.getEvents().get(0).getLevel()).isEqualTo("OK");
-    assertThat(result.getEvents().get(0).getData()).isNotNull();
-    assertThat(result.getEvents().get(0).getData().getSeries()).hasSize(1);
-    assertThat(result.getEvents().get(0).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
-    assertThat(result.getEvents().get(1)).isNotNull();
-    assertThat(result.getEvents().get(1).getLevel()).isEqualTo("CRITICAL");
-    assertThat(result.getEvents().get(1).getData()).isNotNull();
-    assertThat(result.getEvents().get(1).getData().getSeries()).hasSize(1);
-    assertThat(result.getEvents().get(1).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+    assertThat(result.getData().getEvents()).hasSize(2);
+    assertThat(result.getData().getEvents().get(0)).isNotNull();
+    assertThat(result.getData().getEvents().get(0).getLevel()).isEqualTo("OK");
+    assertThat(result.getData().getEvents().get(0).getData()).isNotNull();
+    assertThat(result.getData().getEvents().get(0).getData().getSeries()).hasSize(1);
+    assertThat(result.getData().getEvents().get(0).getData().getSeries().get(0).getName())
+        .isEqualTo(measurementName);
+    assertThat(result.getData().getEvents().get(1)).isNotNull();
+    assertThat(result.getData().getEvents().get(1).getLevel()).isEqualTo("CRITICAL");
+    assertThat(result.getData().getEvents().get(1).getData()).isNotNull();
+    assertThat(result.getData().getEvents().get(1).getData().getSeries()).hasSize(1);
+    assertThat(result.getData().getEvents().get(1).getData().getSeries().get(0).getName())
+        .isEqualTo(measurementName);
 
     verifyEventEnginePicker(request);
 
@@ -334,15 +337,16 @@ public class TestEventTaskServiceTest {
 
     final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
 
-    assertThat(result.isPartialResults()).isTrue();
-    assertThat(result.getStats()).isEqualTo(expectedTaskWithStats.getStats());
+    assertThat(result.getErrors()).isNotEmpty();
+    assertThat(result.getData().getStats()).isEqualTo(expectedTaskWithStats.getStats());
 
-    assertThat(result.getEvents()).hasSize(1);
-    assertThat(result.getEvents().get(0)).isNotNull();
-    assertThat(result.getEvents().get(0).getLevel()).isEqualTo("CRITICAL");
-    assertThat(result.getEvents().get(0).getData()).isNotNull();
-    assertThat(result.getEvents().get(0).getData().getSeries()).hasSize(1);
-    assertThat(result.getEvents().get(0).getData().getSeries().get(0).getName()).isEqualTo(measurementName);
+    assertThat(result.getData().getEvents()).hasSize(1);
+    assertThat(result.getData().getEvents().get(0)).isNotNull();
+    assertThat(result.getData().getEvents().get(0).getLevel()).isEqualTo("CRITICAL");
+    assertThat(result.getData().getEvents().get(0).getData()).isNotNull();
+    assertThat(result.getData().getEvents().get(0).getData().getSeries()).hasSize(1);
+    assertThat(result.getData().getEvents().get(0).getData().getSeries().get(0).getName())
+        .isEqualTo(measurementName);
 
     verifyEventEnginePicker(request);
 
@@ -368,7 +372,8 @@ public class TestEventTaskServiceTest {
 
     setupMockKapacitorServer(expectedTaskCreate, taskId, true, false, List.of("cpu usage=90i"));
 
-    when(tickScriptBuilder.build(anyString(), any(), any(), any(), anyBoolean()))
+    when(tickScriptBuilder
+        .build(anyString(), any(EventEngineTaskParameters.class), any(), any(), anyBoolean()))
         .thenReturn("Mocked tick script content");
 
     // Initiate operation
@@ -382,12 +387,9 @@ public class TestEventTaskServiceTest {
 
     // Assertions
 
-    assertThatThrownBy(() -> {
-      completableResult.get(5, TimeUnit.SECONDS);
-    })
-        .isInstanceOf(ExecutionException.class)
-        .hasCauseInstanceOf(TestTimedOutException.class)
-        .hasMessageContaining("Timed out waiting for test-event-task result");
+    final TestTaskResult result = completableResult.get(5, TimeUnit.SECONDS);
+    assertThat(result.getErrors()).isNotEmpty();
+    assertThat(result.getErrors().get(0).equals("Timed out waiting for test-event-task result"));
 
     verifyEventEnginePicker(request);
 
@@ -504,8 +506,8 @@ public class TestEventTaskServiceTest {
   }
 
   private Task setupMockKapacitorServer(String expectedTaskCreate, String taskId,
-                                        boolean includeTaskGet, boolean failedMetricWrite,
-                                        List<String> expectedMetricLines)
+      boolean includeTaskGet, boolean failedMetricWrite,
+      List<String> expectedMetricLines)
       throws JsonProcessingException {
     mockServer.expect(requestTo("http://localhost:0/kapacitor/v1/tasks"))
         .andExpect(method(HttpMethod.POST))
@@ -520,7 +522,7 @@ public class TestEventTaskServiceTest {
           )
       )
           .andExpect(method(HttpMethod.POST))
-          .andExpect(content().string(line+"\n"))
+          .andExpect(content().string(line + "\n"))
           .andRespond(
               failedMetricWrite ?
                   withStatus(HttpStatus.INTERNAL_SERVER_ERROR) :
@@ -543,7 +545,8 @@ public class TestEventTaskServiceTest {
           .andExpect(method(HttpMethod.GET))
           .andRespond(
               withSuccess(
-                  objectMapper.writeValueAsString(expectedTaskWithStats), MediaType.APPLICATION_JSON)
+                  objectMapper.writeValueAsString(expectedTaskWithStats),
+                  MediaType.APPLICATION_JSON)
           );
     }
 

@@ -28,7 +28,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
-import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.EventData;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.SeriesItem;
 import com.rackspace.salus.event.model.kapacitor.Task.Stats;
@@ -90,21 +91,22 @@ public class EventTaskApiClientTest {
 
     String tenantId = RandomStringUtils.randomAlphabetic(8);
     final TestTaskResult testTaskResultExpected = new TestTaskResult()
-        .setEvents(List.of(
-            new EventResult()
-                .setData(
-                    new EventData()
-                        .setSeries(List.of(
-                            new SeriesItem()
-                                .setName(testTaskRequest.getTask().getMeasurement())
-                        ))
-                )
-                .setLevel("CRITICAL")
-        ))
-        .setStats(
-            new Stats()
-                .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
-        );
+        .setData(new TestTaskResultData()
+            .setEvents(List.of(
+                new EventResult()
+                    .setData(
+                        new EventData()
+                            .setSeries(List.of(
+                                new SeriesItem()
+                                    .setName(testTaskRequest.getTask().getMeasurement())
+                            ))
+                    )
+                    .setLevel("CRITICAL")
+            ))
+            .setStats(
+                new Stats()
+                    .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
+            ));
 
     mockServer.expect(requestToUriTemplate("/api/tenant/{tenantId}/test-task", tenantId))
         .andExpect(method(HttpMethod.POST))
