@@ -16,34 +16,36 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
-import com.rackspace.salus.event.manage.model.kapacitor.Task;
+import com.rackspace.salus.event.model.kapacitor.KapacitorEvent;
+import com.rackspace.salus.event.model.kapacitor.Task;
 import java.util.List;
 import lombok.Data;
 
 @Data
-@JsonInclude(Include.NON_NULL)
 public class TestTaskResult {
 
-  /**
-   * When true, indicates that the overall operation timed out and <code>events</code>
-   * contains a subset of the expected results.
-   */
-  boolean partialResults;
-  /**
-   * Contains the resulting event per metric provided in the request.
-   */
-  List<EventResult> events;
-  /**
-   * Contains the kapacitor stats for task that was created.
-   */
-  Task.Stats stats;
+  private List<String> errors;
+  private TestTaskResultData data;
 
   @Data
-  public static class EventResult {
-    String level;
-    KapacitorEvent.EventData data;
+  public static class TestTaskResultData {
+
+    /**
+     * Contains the resulting event per metric provided in the request.
+     */
+    List<EventResult> events;
+    /**
+     * Contains the kapacitor stats for task that was created.
+     */
+    Task.Stats stats;
+
+    @Data
+    public static class EventResult {
+
+      String level;
+      KapacitorEvent.EventData data;
+    }
   }
+
+
 }

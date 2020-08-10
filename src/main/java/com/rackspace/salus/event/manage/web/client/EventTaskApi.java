@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Rackspace US, Inc.
+ * Copyright 2020 Rackspace US, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.rackspace.salus.event.manage.model.kapacitor;
+package com.rackspace.salus.event.manage.web.client;
 
-import java.util.List;
-import lombok.Data;
+import com.rackspace.salus.event.manage.model.TestTaskRequest;
+import com.rackspace.salus.event.manage.model.TestTaskResult;
 
-@Data
-public class TaskList {
-  List<Task> tasks;
+public interface EventTaskApi {
+    public TestTaskResult performTestTask(String tenantId, TestTaskRequest request);
 }

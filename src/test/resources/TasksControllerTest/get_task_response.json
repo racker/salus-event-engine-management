@@ -17,13 +17,13 @@
             {
               "type": "comparison",
               "comparator": ">",
-              "metricName": "usage_user",
+              "valueName": "usage_user",
               "comparisonValue": 75
             },
             {
               "type": "comparison",
               "comparator": "==",
-              "metricName": "usage_system",
+              "valueName": "usage_system",
               "comparisonValue": 92
             }
           ]

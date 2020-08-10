@@ -537,7 +537,7 @@ public class TasksServiceTest {
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setMetricName("usage_user")
+                                .setValueName("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )

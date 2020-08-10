@@ -26,13 +26,14 @@ import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
-import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
-import com.rackspace.salus.event.manage.model.kapacitor.DbRp;
-import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent;
-import com.rackspace.salus.event.manage.model.kapacitor.Task;
-import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
-import com.rackspace.salus.event.manage.model.kapacitor.Task.Status;
-import com.rackspace.salus.event.manage.model.kapacitor.Task.Type;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
+import com.rackspace.salus.event.model.kapacitor.DbRp;
+import com.rackspace.salus.event.model.kapacitor.KapacitorEvent;
+import com.rackspace.salus.event.model.kapacitor.Task;
+import com.rackspace.salus.event.model.kapacitor.Task.Stats;
+import com.rackspace.salus.event.model.kapacitor.Task.Status;
+import com.rackspace.salus.event.model.kapacitor.Task.Type;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import io.micrometer.core.instrument.Counter;
@@ -100,14 +101,14 @@ public class TestEventTaskService {
 
   @Autowired
   public TestEventTaskService(EventEnginePicker eventEnginePicker,
-                              RestTemplateBuilder restTemplateBuilder,
-                              MeterRegistry meterRegistry,
-                              KapacitorTaskIdGenerator taskIdGenerator,
-                              TickScriptBuilder tickScriptBuilder,
-                              KafkaTopicProperties kafkaTopicProperties,
-                              TestEventTaskProperties testEventTaskProperties,
-                              @Value("${spring.application.name}") String appName,
-                              @Value("${localhost.name}") String ourHostName) {
+      RestTemplateBuilder restTemplateBuilder,
+      MeterRegistry meterRegistry,
+      KapacitorTaskIdGenerator taskIdGenerator,
+      TickScriptBuilder tickScriptBuilder,
+      KafkaTopicProperties kafkaTopicProperties,
+      TestEventTaskProperties testEventTaskProperties,
+      @Value("${spring.application.name}") String appName,
+      @Value("${localhost.name}") String ourHostName) {
     this.eventEnginePicker = eventEnginePicker;
     this.restTemplate = restTemplateBuilder.build();
     this.taskIdGenerator = taskIdGenerator;
@@ -132,7 +133,7 @@ public class TestEventTaskService {
   }
 
   public CompletableFuture<TestTaskResult> performTestTask(String tenantId,
-                                                           TestTaskRequest request) {
+      TestTaskRequest request) {
     final String metricName = assertMetrics(request);
 
     final EngineInstance engineInstance;
@@ -145,7 +146,7 @@ public class TestEventTaskService {
 
     final String taskId =
         taskIdGenerator.generateTaskId(
-            tenantId, TASK_ID_PREFIX +metricName
+            tenantId, TASK_ID_PREFIX + metricName
         ).getKapacitorTaskId();
 
     createTask(request, metricName, engineInstance, taskId);
@@ -225,24 +226,25 @@ public class TestEventTaskService {
       if (throwable instanceof TimeoutException) {
         counterTimedOut.increment();
         if (partialEvents.isEmpty()) {
-          throw new TestTimedOutException("Timed out waiting for test-event-task result", throwable);
+          return new TestTaskResult().setErrors(List.of("Timed out waiting for test-event-task result"));
         } else {
           return new TestTaskResult()
-              .setPartialResults(true)
-              .setEvents(partialEvents)
-              .setStats(taskStats);
+              .setErrors(List.of("Timed out waiting for test-event-task result"))
+              .setData(new TestTaskResultData()
+                  .setEvents(partialEvents)
+                  .setStats(taskStats));
         }
       } else if (throwable != null) {
         log.warn("Test-task with id={} completed with unexpected exception", taskId, throwable);
         counterFinishWithException.increment();
         if (throwable instanceof BackendException) {
           // just re-throw since BackendException originates from this service
-          throw (BackendException)throwable;
+          throw (BackendException) throwable;
         } else {
           throw new IllegalStateException("Unexpected exception during test-event-task", throwable);
         }
       } else {
-        testTaskResult.setStats(taskStats);
+        testTaskResult.getData().setStats(taskStats);
         counterSuccess.increment();
         return testTaskResult;
       }
@@ -251,7 +253,7 @@ public class TestEventTaskService {
   }
 
   private void createTask(TestTaskRequest request,
-                          String metricName, EngineInstance engineInstance, String taskId) {
+      String metricName, EngineInstance engineInstance, String taskId) {
     final String tickScript = tickScriptBuilder
         .build(
             metricName,
@@ -305,7 +307,7 @@ public class TestEventTaskService {
   }
 
   private void deleteTask(EngineInstance engineInstance,
-                          String taskId) {
+      String taskId) {
     log.debug("Deleting task at instance={} for test with id={}", engineInstance, taskId);
     try {
       restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{id}",
@@ -333,12 +335,12 @@ public class TestEventTaskService {
 
   /**
    * Removes all stateful and filtering aspects of the task.
-   *
-   * Ensures a task can be executed on the single metric provided rather than requiring a
-   * series of metrics to be received.
-   *
-   * For example, if stateDuration is set to 10mins, a test-task should not require 10mins worth
-   * of metrics before returning a result.
+   * <p>
+   * Ensures a task can be executed on the single metric provided rather than requiring a series of
+   * metrics to be received.
+   * <p>
+   * For example, if stateDuration is set to 10mins, a test-task should not require 10mins worth of
+   * metrics before returning a result.
    */
   private static EventEngineTaskParameters simplifyTask(EventEngineTaskParameters taskParameters) {
     return new EventEngineTaskParameters()
@@ -356,7 +358,7 @@ public class TestEventTaskService {
   }
 
   private void postMetric(SimpleNameTagValueMetric metric, EngineInstance engineInstance,
-                          String taskId) {
+      String taskId) {
 
     final Builder pointBuilder = Point.measurement(metric.getName());
     if (metric.getFvalues() != null) {
@@ -461,6 +463,7 @@ public class TestEventTaskService {
    * future when the expected count of those has been collected.
    */
   static class EventResultCollector {
+
     private final CompletableFuture<TestTaskResult> pendingResult;
     private final int expectedCount;
     final List<EventResult> events = new ArrayList<>();
@@ -471,13 +474,13 @@ public class TestEventTaskService {
     }
 
     public synchronized void add(EventResult event) {
-        events.add(event);
-        if (events.size() >= expectedCount) {
-          pendingResult.complete(
-              new TestTaskResult()
-                  .setEvents(events)
-          );
-        }
+      events.add(event);
+      if (events.size() >= expectedCount) {
+        pendingResult.complete(
+            new TestTaskResult()
+                .setData(new TestTaskResultData().setEvents(events))
+        );
+      }
     }
 
     public synchronized List<EventResult> getEvents() {

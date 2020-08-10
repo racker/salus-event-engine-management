@@ -22,6 +22,7 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -44,12 +45,13 @@ import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
-import com.rackspace.salus.event.manage.model.TestTaskResult.EventResult;
-import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.EventData;
-import com.rackspace.salus.event.manage.model.kapacitor.KapacitorEvent.SeriesItem;
-import com.rackspace.salus.event.manage.model.kapacitor.Task.Stats;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
+import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
+import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.EventData;
+import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.SeriesItem;
+import com.rackspace.salus.event.model.kapacitor.Task.Stats;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
@@ -97,6 +99,7 @@ public class TasksApiControllerTest {
 
   // Ensure Expressions have their `threshold` field populated with something (a string).
   DefaultClassInfoStrategy classInfoStrategy;
+
   {
     try {
       classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
@@ -105,6 +108,7 @@ public class TasksApiControllerTest {
       e.printStackTrace();
     }
   }
+
   PodamFactory podamFactory = new PodamFactoryImpl();
 
   @Autowired
@@ -127,7 +131,7 @@ public class TasksApiControllerTest {
 
   @Test
   public void testTenantVerification_Success() throws Exception {
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     doNothing().when(tasksService).deleteTask(anyString(), any());
     when(tenantMetadataRepository.existsByTenantId(tenantId))
@@ -143,7 +147,7 @@ public class TasksApiControllerTest {
 
   @Test
   public void testTenantVerification_Fail() throws Exception {
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     doNothing().when(tasksService).deleteTask(anyString(), any());
     when(tenantMetadataRepository.existsByTenantId(tenantId))
@@ -180,7 +184,7 @@ public class TasksApiControllerTest {
     when(tasksService.getTasks(anyString(), any()))
         .thenReturn(pageOfTasks);
 
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     mockMvc.perform(get("/api/tenant/{tenantId}/tasks", tenantId)
         .contentType(MediaType.APPLICATION_JSON))
@@ -232,12 +236,12 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask() throws Exception{
+  public void testCreateTask() throws Exception {
     EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
 
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     CreateTask create = buildCreateTask(true);
 
@@ -255,8 +259,8 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask_invalidBasicEvalNode() throws Exception{
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+  public void testCreateTask_invalidBasicEvalNode() throws Exception {
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     List<MetricExpressionBase> customMetrics = List.of(
         new CustomEvalNode()
@@ -276,8 +280,8 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask_tooManyDerivativeNodes() throws Exception{
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+  public void testCreateTask_tooManyDerivativeNodes() throws Exception {
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     List<MetricExpressionBase> customMetrics = List.of(
         new DerivativeNode()
@@ -299,12 +303,12 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask_MissingName() throws Exception{
+  public void testCreateTask_MissingName() throws Exception {
     EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
 
-    String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     CreateTask create = buildCreateTask(false);
 
@@ -325,18 +329,18 @@ public class TasksApiControllerTest {
 
     UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
     mockMvc.perform(delete(
-      "/api/tenant/{tenantId}/tasks/{name}",
-      "t-1", id))
-      .andDo(print())
-      .andExpect(status().isNoContent());
+        "/api/tenant/{tenantId}/tasks/{name}",
+        "t-1", id))
+        .andDo(print())
+        .andExpect(status().isNoContent());
 
     verify(tasksService).deleteTask("t-1", id);
     verifyNoMoreInteractions(tasksService);
   }
 
   @Test
-  public void testTestEventTask_normal() throws Exception{
-    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+  public void testTestEventTask_normal() throws Exception {
+    final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     final CreateTask createTask = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
@@ -345,25 +349,23 @@ public class TasksApiControllerTest {
         .setTask(createTask)
         .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-            .setName(createTask.getMeasurement())
+                .setName(createTask.getMeasurement())
         ));
 
     final TestTaskResult expectedResult = new TestTaskResult()
-        .setEvents(List.of(
+        .setData(new TestTaskResultData().setEvents(List.of(
             new EventResult()
-            .setData(
-                new EventData()
-                .setSeries(List.of(
-                    new SeriesItem()
-                        .setName(testTaskRequest.getTask().getMeasurement())
-                ))
-            )
-            .setLevel("CRITICAL")
-        ))
-        .setStats(
+                .setData(
+                    new EventData()
+                        .setSeries(List.of(
+                            new SeriesItem()
+                                .setName(testTaskRequest.getTask().getMeasurement())
+                        ))
+                )
+                .setLevel("CRITICAL"))).setStats(
             new Stats()
-            .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
-        );
+                .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
+        ));
 
     when(testEventTaskService.performTestTask(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedResult));
@@ -377,13 +379,13 @@ public class TasksApiControllerTest {
 
     mockMvc.perform(asyncDispatch(mvcResult))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.partialResults",
-            equalTo(false)))
-        .andExpect(jsonPath("$.events[0].level",
+        .andExpect(jsonPath("$.errors",
+            equalTo(null)))
+        .andExpect(jsonPath("$.data.events[0].level",
             equalTo("CRITICAL")))
-        .andExpect(jsonPath("$.events[0].data.series[0].name",
+        .andExpect(jsonPath("$.data.events[0].data.series[0].name",
             equalTo(testTaskRequest.getTask().getMeasurement())))
-        .andExpect(jsonPath("$.stats.node-stats.alert2.crits_triggered",
+        .andExpect(jsonPath("$.data.stats.node-stats.alert2.crits_triggered",
             equalTo(1)))
     ;
 
@@ -393,8 +395,8 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testTestEventTask_partial() throws Exception{
-    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+  public void testTestEventTask_partial() throws Exception {
+    final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     final CreateTask createTask = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
@@ -404,30 +406,31 @@ public class TasksApiControllerTest {
         .setMetrics(List.of(
             // send in two metrics
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-            .setName(createTask.getMeasurement()),
+                .setName(createTask.getMeasurement()),
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-            .setName(createTask.getMeasurement())
+                .setName(createTask.getMeasurement())
         ));
 
     final TestTaskResult expectedResult = new TestTaskResult()
         // but only get a partial result
-        .setPartialResults(true)
+        .setErrors(List.of("Timed out waiting for test-event-task result"))
         // ...of one event
-        .setEvents(List.of(
-            new EventResult()
-            .setData(
-                new EventData()
-                .setSeries(List.of(
-                    new SeriesItem()
-                        .setName(testTaskRequest.getTask().getMeasurement())
-                ))
-            )
-            .setLevel("CRITICAL")
-        ))
-        .setStats(
-            new Stats()
-            .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
-        );
+        .setData(new TestTaskResultData()
+            .setEvents(List.of(
+                new EventResult()
+                    .setData(
+                        new EventData()
+                            .setSeries(List.of(
+                                new SeriesItem()
+                                    .setName(testTaskRequest.getTask().getMeasurement())
+                            ))
+                    )
+                    .setLevel("CRITICAL")
+            ))
+            .setStats(
+                new Stats()
+                    .setNodeStats(Map.of("alert2", Map.of("crits_triggered", 1)))
+            ));
 
     when(testEventTaskService.performTestTask(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedResult));
@@ -441,13 +444,13 @@ public class TasksApiControllerTest {
 
     mockMvc.perform(asyncDispatch(mvcResult))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.partialResults",
-            equalTo(true)))
-        .andExpect(jsonPath("$.events[0].level",
+        .andExpect(jsonPath("$.errors[0]",
+            equalTo("Timed out waiting for test-event-task result")))
+        .andExpect(jsonPath("$.data.events[0].level",
             equalTo("CRITICAL")))
-        .andExpect(jsonPath("$.events[0].data.series[0].name",
+        .andExpect(jsonPath("$.data.events[0].data.series[0].name",
             equalTo(testTaskRequest.getTask().getMeasurement())))
-        .andExpect(jsonPath("$.stats.node-stats.alert2.crits_triggered",
+        .andExpect(jsonPath("$.data.stats.node-stats.alert2.crits_triggered",
             equalTo(1)))
     ;
 
@@ -457,8 +460,8 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testTestEventTask_timedOut() throws Exception{
-    final String tenantId = RandomStringUtils.randomAlphabetic( 8 );
+  public void testTestEventTask_timedOut() throws Exception {
+    final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
     final CreateTask createTask = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
@@ -467,7 +470,7 @@ public class TasksApiControllerTest {
         .setTask(createTask)
         .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-            .setName(createTask.getMeasurement())
+                .setName(createTask.getMeasurement())
         ));
 
     final CompletableFuture<TestTaskResult> completableFuture = new CompletableFuture<>();
@@ -496,7 +499,8 @@ public class TasksApiControllerTest {
     return buildCreateTask(setName, null);
   }
 
-  private static CreateTask buildCreateTask(boolean setName, List<MetricExpressionBase> customMetrics) {
+  private static CreateTask buildCreateTask(boolean setName,
+      List<MetricExpressionBase> customMetrics) {
     return new CreateTask()
         .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
@@ -511,7 +515,7 @@ public class TasksApiControllerTest {
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setMetricName("usage_user")
+                                .setValueName("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
@@ -524,7 +528,8 @@ public class TasksApiControllerTest {
 
   }
 
-  private static EventEngineTask buildTask(String tenantId, List<MetricExpressionBase> customMetrics) {
+  private static EventEngineTask buildTask(String tenantId,
+      List<MetricExpressionBase> customMetrics) {
     return new EventEngineTask()
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
         .setKapacitorTaskId("testTaskId")
@@ -545,19 +550,19 @@ public class TasksApiControllerTest {
                         .setMessage("critical threshold was hit")
                         .setExpression(
                             new LogicalExpression()
-                        .setOperator(Operator.OR)
-                        .setExpressions(List.of(
+                                .setOperator(Operator.OR)
+                                .setExpressions(List.of(
                                     new ComparisonExpression()
-                                        .setMetricName("usage_user")
+                                        .setValueName("usage_user")
                                         .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(75),
                                     new ComparisonExpression()
-                                        .setMetricName("usage_system")
+                                        .setValueName("usage_system")
                                         .setComparator(Comparator.EQUAL_TO)
                                         .setComparisonValue(92)))
                         )
                 ))
-            .setCustomMetrics(customMetrics)
+                .setCustomMetrics(customMetrics)
         );
   }
 }

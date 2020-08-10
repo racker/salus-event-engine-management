@@ -16,18 +16,22 @@
 
 package com.rackspace.salus.event.manage.config;
 
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties("salus.event-engine-management")
 @Component
 @Data
+@Validated
 public class AppProperties {
 
   /**
    * The kapacitor event handler topic that processes long-lived kapacitor tasks
    * This is different than the kafka topic where the events are produced.
    */
+  @NotBlank
   String eventHandlerTopic = "events";
 }
