@@ -198,14 +198,8 @@ public class TasksService {
     }
   }
 
-  @Transactional
   public void deleteAllTasksForTenant(String tenant) {
-    Page<EventEngineTask> results = eventEngineTaskRepository
-        .findByTenantId(tenant, Pageable.unpaged());
-    Collection<EngineInstance> eventEngines = eventEnginePicker.pickAll();
-    results.forEach(value -> deleteTaskFromKapacitors(value.getKapacitorTaskId(),
-        eventEngines, false));
-
-    eventEngineTaskRepository.deleteAllByTenantId(tenant);
+    eventEngineTaskRepository.findByTenantId(tenant, Pageable.unpaged())
+        .forEach(task -> deleteTask(tenant, task.getId()));
   }
 }
