@@ -12,6 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.rackspace.salus.event.manage.web.controller;
@@ -121,5 +122,13 @@ public class TasksApiController {
       @PathVariable String tenantId,
       @RequestBody @Validated(ValidationGroups.Test.class) TestTaskRequest request) {
     return testEventTaskService.performTestTask(tenantId, request);
+  }
+
+  @DeleteMapping("/admin/tenant/{tenantId}/tasks")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @ApiOperation(value = "Deletes all Tasks for Tenant")
+  @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
+  public void deleteTask(@PathVariable String tenantId) {
+    tasksService.deleteAllTasksForTenant(tenantId);
   }
 }
