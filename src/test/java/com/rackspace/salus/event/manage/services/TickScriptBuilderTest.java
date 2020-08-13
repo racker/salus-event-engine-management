@@ -516,4 +516,31 @@ public class TickScriptBuilderTest {
 
     Assert.assertEquals(expectedString, script);
   }
+
+  @Test
+  public void testAlertMessage() throws IOException {
+    String expectedString = readContent("/TickScriptBuilderTest/testAddAlertMessageToKapacitor.tick");
+
+    ComparisonExpression critExpression = new ComparisonExpression()
+        .setValueName("field")
+        .setComparator(Comparator.GREATER_THAN)
+        .setComparisonValue(0);
+
+    StateExpression stateExpression = new StateExpression()
+        .setExpression(critExpression)
+        .setState(TaskState.CRITICAL)
+        .setMessage("Field is more than threshold");
+
+    Map<String, String> labelSelectors = new HashMap<>();
+    labelSelectors.put("resource_metadata_os", "linux");
+    EventEngineTaskParameters tp = new EventEngineTaskParameters()
+        .setMessageTemplate("The CPU usage was too high")
+        .setStateExpressions(List.of(stateExpression))
+        .setLabelSelector(labelSelectors)
+        .setCriticalStateDuration(5);
+
+
+    String script = tickScriptBuilder.build("measurement", tp);
+    Assert.assertEquals(expectedString, script);
+  }
 }

@@ -8,6 +8,7 @@
     "criticalStateDuration": 5,
     "warningStateDuration": null,
     "infoStateDuration": null,
+    "messageTemplate": null,
     "stateExpressions": [
       {
         "expression": {

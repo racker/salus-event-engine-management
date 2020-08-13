@@ -349,6 +349,7 @@ public class TestEventTaskService {
         .setWarningStateDuration(null)
         .setInfoStateDuration(null)
         .setCustomMetrics(taskParameters.getCustomMetrics())
+        .setMessageTemplate(taskParameters.getMessageTemplate())
         .setStateExpressions(taskParameters.getStateExpressions());
   }
 

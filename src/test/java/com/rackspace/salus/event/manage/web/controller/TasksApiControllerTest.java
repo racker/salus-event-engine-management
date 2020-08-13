@@ -509,6 +509,7 @@ public class TasksApiControllerTest {
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
+                .setMessageTemplate("The CPU usage was too high")
                 .setCustomMetrics(customMetrics)
                 .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
