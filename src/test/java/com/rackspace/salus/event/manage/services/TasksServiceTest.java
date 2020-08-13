@@ -22,6 +22,7 @@ import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -496,7 +497,7 @@ public class TasksServiceTest {
     final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(taskDbId);
     assertThat(retrieved).isEmpty();
 
-    verify(eventEnginePicker).pickAll();
+    verify(eventEnginePicker, times(2)).pickAll();
 
     mockKapacitorServer.verify();
 
