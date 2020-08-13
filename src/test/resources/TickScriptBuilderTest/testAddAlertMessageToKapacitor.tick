@@ -1,0 +1,18 @@
+stream
+  |from()
+    .measurement('measurement')
+    .groupBy('system_resource_id', 'system_monitor_id', 'system_monitoring_zone')
+  |where(lambda:
+    isPresent("resource_metadata_os") AND ("resource_metadata_os" == 'linux')
+      )
+  |stateDuration(lambda: ("field" > 0))
+    .unit(1m)
+    .as('crit_count')
+  |alert()
+    .stateChangesOnly()
+    .id('{{ .TaskName }}:{{ .Group }}')
+    .message('The CPU usage was too high')
+    .details('task={{.TaskName}}')
+    .crit(lambda: "crit_count" >= 5)
+    .history(21)
+    .topic('events')

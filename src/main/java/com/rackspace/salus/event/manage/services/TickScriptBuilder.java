@@ -100,6 +100,7 @@ public class TickScriptBuilder {
     return taskTemplate.execute(TaskContext.builder()
         .labels(!taskParameters.getLabelSelector().isEmpty() ? taskParameters.getLabelSelector().entrySet() : null)
         .alertId(String.join(":", idParts))
+        .messageText(taskParameters.getMessageTemplate())
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
@@ -235,6 +236,7 @@ public class TickScriptBuilder {
     boolean stateChangesOnly = true;
     String measurement;
     String alertId;
+    String messageText;
     String critCount;
     String warnCount;
     String infoCount;

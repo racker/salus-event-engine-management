@@ -66,6 +66,9 @@ stream
     .stateChangesOnly()
 {{/stateChangesOnly}}
     .id('{{alertId}}')
+{{#messageText}}
+    .message('{{messageText}}')
+{{/messageText}}
     .details('{{details}}')
 {{#infoCount}}
     .info(lambda: {{infoCount}})
