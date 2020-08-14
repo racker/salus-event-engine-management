@@ -12,6 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.rackspace.salus.event.manage.services;
@@ -195,5 +196,10 @@ public class TasksService {
             kapacitorTaskId, engineInstance, e);
       }
     }
+  }
+
+  public void deleteAllTasksForTenant(String tenant) {
+    eventEngineTaskRepository.findByTenantId(tenant, Pageable.unpaged())
+        .forEach(task -> deleteTask(tenant, task.getId()));
   }
 }
