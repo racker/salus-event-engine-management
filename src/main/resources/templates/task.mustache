@@ -26,6 +26,8 @@ stream
     .as('min_{{.}}')
   |mean('{{.}}')
     .as('avg_{{.}}')
+  |sum('{{.}}')
+    .as('sum_{{.}}')
 {{/windowFields}}
 {{#joinedEvals}}
   |eval({{joinedEvals}})
