@@ -21,6 +21,7 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.ValidationGroups;
+import com.rackspace.salus.event.manage.services.EventConversionService;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -63,11 +65,14 @@ public class TasksApiController {
 
   private final TasksService tasksService;
   private final TestEventTaskService testEventTaskService;
+  private final EventConversionService eventConversionService;
 
   @Autowired
-  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService) {
+  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService,
+      EventConversionService eventConversionService) {
     this.tasksService = tasksService;
     this.testEventTaskService = testEventTaskService;
+    this.eventConversionService = eventConversionService;
   }
 
   @PostMapping("/tenant/{tenantId}/tasks")
@@ -79,6 +84,18 @@ public class TasksApiController {
       @RequestBody @Validated(ValidationGroups.Create.class) CreateTask task
   ) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
+
+    return new EventEngineTaskDTO(eventEngineTask);
+  }
+
+  @PutMapping("/tenant/{tenantId}/tasks/{uuid}")
+  @ApiOperation(value = "Update specific Task for Tenant")
+  public EventEngineTaskDTO updateTask(
+      @PathVariable String tenantId,
+      @PathVariable UUID uuid,
+      @RequestBody @Validated(ValidationGroups.Create.class) CreateTask task
+  ) {
+    final EventEngineTask eventEngineTask = tasksService.updateTask(eventConversionService.convertFromInput(tenantId, uuid, task));
 
     return new EventEngineTaskDTO(eventEngineTask);
   }
