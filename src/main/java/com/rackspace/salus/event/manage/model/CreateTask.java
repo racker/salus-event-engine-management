@@ -29,9 +29,9 @@ public class CreateTask {
   @NotEmpty(groups = ValidationGroups.Create.class)
   String name;
 
-  @NotEmpty
+  @NotEmpty(groups = {ValidationGroups.Create.class, ValidationGroups.Test.class})
   String measurement;
 
-  @NotNull @Valid
+  @NotNull(groups = {ValidationGroups.Create.class, ValidationGroups.Test.class}) @Valid
   EventEngineTaskParameters taskParameters;
 }

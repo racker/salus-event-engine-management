@@ -93,7 +93,7 @@ public class TasksApiController {
   public EventEngineTaskDTO updateTask(
       @PathVariable String tenantId,
       @PathVariable UUID uuid,
-      @RequestBody @Validated(ValidationGroups.Create.class) CreateTask task
+      @RequestBody @Validated(ValidationGroups.Update.class) CreateTask task
   ) {
     final EventEngineTask eventEngineTask = tasksService.updateTask(eventConversionService.convertFromInput(tenantId, uuid, task));
 

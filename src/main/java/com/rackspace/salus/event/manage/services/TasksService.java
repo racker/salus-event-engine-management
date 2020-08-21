@@ -85,7 +85,7 @@ public class TasksService {
         .setScript(tickScriptBuilder.build(in.getMeasurement(), in.getTaskParameters()))
         .setStatus(Status.enabled);
 
-    sendTasksToKapacitor(task, taskId);
+    sendTaskToKapacitor(task, taskId);
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
         .setId(taskId.getBaseId())
@@ -152,17 +152,40 @@ public class TasksService {
   }
 
   @Transactional
-  public EventEngineTask updateTask(@Valid EventEngineTask in) {
-    EventEngineTask eventEngineTask = getEventEngineTask(in.getTenantId(), in.getId()).orElseThrow(() ->
-        new com.rackspace.salus.telemetry.model.NotFoundException(String.format("No Event found for %s on tenant %s",
-            in.getId(), in.getTenantId())));
+  public EventEngineTask updateTask(@Valid EventEngineTask update) {
+    EventEngineTask eventEngineTask = getEventEngineTask(update.getTenantId(), update.getId()).orElseThrow(() ->
+        new NotFoundException(String.format("No Event found for %s on tenant %s",
+            update.getId(), update.getTenantId())));
+    log.info("Updating event engine task={} with new values={}", update.getId(), update);
+    if(!StringUtils.isEmpty(update.getName()) && !eventEngineTask.getName().equals(update.getName()))  {
+      log.info("changing name={} to {} ",eventEngineTask.getName(), update.getName());
+      eventEngineTask.setName(update.getName());
+    } else if(!StringUtils.isEmpty(update.getMeasurement()) && !update.getMeasurement().equals(eventEngineTask.getMeasurement())){
+      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), update.getMeasurement());
+      eventEngineTask.setMeasurement(update.getMeasurement());
+      eventEngineTask = updateMeasurementAndTaskParameters(eventEngineTask, update);
+    } else if(update.getTaskParameters() != null && !update.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
+      log.info("changing task parameters");
+      eventEngineTask.setTaskParameters(update.getTaskParameters());
+      eventEngineTask = updateMeasurementAndTaskParameters(eventEngineTask, update);
+    }
+    return eventEngineTaskRepository.save(eventEngineTask);
+  }
 
+  public Optional<EventEngineTask> getEventEngineTask(String tenantId, UUID uuid)  {
+    return eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid);
+  }
+
+  private EventEngineTask updateMeasurementAndTaskParameters(EventEngineTask eventEngineTask, EventEngineTask update) {
+    log.info("deleting existing kapacitors event and creating new events");
     // Remove all kapacitor tasks and its associated ids
     deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
         false);
 
     //update existing KapacitorTaskId with tenant and measurement data
-    final KapacitorTaskId taskId = kapacitorTaskIdGenerator.updateTaskId(in.getTenantId(), in.getMeasurement(), eventEngineTask.getId());
+    final KapacitorTaskId taskId = kapacitorTaskIdGenerator
+        .updateTaskId(eventEngineTask.getTenantId(), eventEngineTask.getMeasurement(), eventEngineTask.getId());
+    eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
 
     final Task task = new Task()
         .setId(eventEngineTask.getKapacitorTaskId())
@@ -171,25 +194,14 @@ public class TasksService {
             .setDb(eventEngineTask.getTenantId())
             .setRp(InfluxScope.INGEST_RETENTION_POLICY)
         ))
-        .setScript(tickScriptBuilder.build(in.getMeasurement(), in.getTaskParameters()))
+        .setScript(tickScriptBuilder.build(eventEngineTask.getMeasurement(), eventEngineTask.getTaskParameters()))
         .setStatus(Status.enabled);
 
-    sendTasksToKapacitor(task, taskId);
-
-    eventEngineTask.setId(taskId.getBaseId())
-        .setMeasurement(in.getMeasurement())
-        .setName(in.getName())
-        .setKapacitorTaskId(taskId.getKapacitorTaskId())
-        .setTaskParameters(in.getTaskParameters());
-
-    return eventEngineTaskRepository.save(eventEngineTask);
+    sendTaskToKapacitor(task, taskId);
+    return eventEngineTask;
   }
 
-  private Optional<EventEngineTask> getEventEngineTask(String tenantId, UUID uuid)  {
-    return eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid);
-  }
-
-  private void sendTasksToKapacitor(Task task, KapacitorTaskId taskId) {
+  private void sendTaskToKapacitor(Task task, KapacitorTaskId taskId) {
     final List<EngineInstance> applied = new ArrayList<>();
 
     final Collection<EngineInstance> engineInstances = eventEnginePicker.pickAll();

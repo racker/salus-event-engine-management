@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,6 +48,7 @@ import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
+import com.rackspace.salus.event.manage.services.EventConversionService;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.EventData;
@@ -116,6 +118,9 @@ public class TasksApiControllerTest {
 
   @MockBean
   TasksService tasksService;
+
+  @MockBean
+  EventConversionService eventConversionService;
 
   @MockBean
   TestEventTaskService testEventTaskService;
@@ -255,6 +260,31 @@ public class TasksApiControllerTest {
             .contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
 
     verify(tasksService).createTask(tenantId, create);
+    verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
+  public void testUpdateTask() throws Exception {
+    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    when(tasksService.updateTask(any()))
+        .thenReturn(task);
+
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
+    UUID uuid = UUID.randomUUID();
+
+    CreateTask create = buildCreateTask(true);
+    EventEngineTask eventEngineTask = eventConversionService.convertFromInput(tenantId, uuid, create);
+
+    mockMvc.perform(put("/api/tenant/{tenantId}/tasks/{uuid}", tenantId, uuid)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andDo(print())
+        .andExpect(status().is2xxSuccessful())
+        .andExpect(content()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+    verify(tasksService).updateTask(eventEngineTask);
     verifyNoMoreInteractions(tasksService);
   }
 

@@ -54,9 +54,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockRestServiceServer;
@@ -67,6 +70,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -103,9 +107,18 @@ public class TasksServiceTest {
   @MockBean
   TickScriptBuilder tickScriptBuilder;
 
+  @MockBean
+  EventConversionService eventConversionService;
+
+  @Autowired
+  EntityManager entityManager;
+  @Autowired
+  JdbcTemplate jdbcTemplate;
+
   @After
   public void tearDown() throws Exception {
     eventEngineTaskRepository.deleteAll();
+    entityManager.flush();
   }
 
   @Test
@@ -544,5 +557,131 @@ public class TasksServiceTest {
                         )
                 )
         ));
+  }
+
+  @Test
+  public void testUpdate_update_name() throws IOException {
+    EventEngineTask eventEngineTask = buildEventEngineTask();
+
+    final KapacitorTaskId taskId = new KapacitorTaskId()
+        .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+        .setKapacitorTaskId("k-1");
+
+    eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
+    eventEngineTask.setId(taskId.getBaseId());
+
+    entityManager.persist(eventEngineTask);
+    entityManager.flush();
+    Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
+
+    // EXECUTE
+    eventEngineTask.setName("measurement_new");
+    final EventEngineTask result = tasksService.updateTask(eventEngineTask);
+
+    // VERIFY
+    assertThat(result).isNotNull();
+
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
+    assertThat(retrieved).isPresent();
+    assertThat(retrieved.get().getName()).isEqualTo(result.getName());
+
+    mockKapacitorServer.verify();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+  }
+
+  @Transactional
+  @Test
+  public void testUpdate_update_measurement() throws IOException {
+    EventEngineTask eventEngineTask = buildEventEngineTask();
+
+    final KapacitorTaskId taskId = new KapacitorTaskId()
+        .setBaseId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
+        .setKapacitorTaskId("k-1");
+
+    eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
+    eventEngineTask.setId(taskId.getBaseId());
+
+    entityManager.persist(eventEngineTask);
+    entityManager.flush();
+    Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
+
+    when(kapacitorTaskIdGenerator.updateTaskId(any(), any(), any()))
+        .thenReturn(taskId);
+
+    when(tickScriptBuilder.build(any(), any()))
+        .thenReturn("built script");
+
+    when(eventEnginePicker.pickAll())
+        .thenReturn(Arrays.asList(
+            new EngineInstance("host", 1000, 0),
+            new EngineInstance("host", 1001, 1)
+        ));
+
+    final String requestJson = readContent("/TasksServiceTest/request.json");
+
+    final String responseJson = readContent("/TasksServiceTest/response_success.json");
+
+    mockKapacitorServer
+        .expect(requestTo("http://host:1000/kapacitor/v1/tasks/k-1"))
+        .andExpect(method(HttpMethod.DELETE))
+        .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+    mockKapacitorServer
+        .expect(requestTo("http://host:1001/kapacitor/v1/tasks/k-1"))
+        .andExpect(method(HttpMethod.DELETE))
+        .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+    mockKapacitorServer
+        .expect(requestTo("http://host:1000/kapacitor/v1/tasks"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(content().json(requestJson))
+        .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+    mockKapacitorServer
+        .expect(requestTo("http://host:1001/kapacitor/v1/tasks"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(content().json(requestJson))
+        .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+
+
+    // EXECUTE
+    EventEngineTask eventEngineTaskExpected = buildEventEngineTask();
+    BeanUtils.copyProperties(eventEngineTask, eventEngineTaskExpected);
+    eventEngineTaskExpected.setMeasurement("mem");
+    final EventEngineTask result = tasksService.updateTask(eventEngineTaskExpected);
+
+    // VERIFY
+
+    assertThat(result).isNotNull();
+
+    verify(kapacitorTaskIdGenerator).updateTaskId("t-1", "mem", taskId.getBaseId());
+
+    verify(tickScriptBuilder).build("mem", eventEngineTask.getTaskParameters());
+
+    verify(eventEnginePicker, times(2)).pickAll();
+
+    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
+    assertThat(retrieved).isPresent();
+    assertThat(retrieved.get().getMeasurement()).isEqualTo(result.getMeasurement());
+
+    mockKapacitorServer.verify();
+
+    verifyNoMoreInteractions(eventEnginePicker, kapacitorTaskIdGenerator,
+        tickScriptBuilder
+    );
+  }
+
+  private static EventEngineTask buildEventEngineTask()  {
+    UUID uuid = UUID.randomUUID();
+    final CreateTask taskIn = buildCreateTask();
+
+    final EventEngineTask eventEngineTask = new EventEngineTask()
+        .setTenantId("t-1")
+        .setName(taskIn.getName())
+        .setTaskParameters(taskIn.getTaskParameters())
+        .setMeasurement(taskIn.getMeasurement());
+    return eventEngineTask;
   }
 }
