@@ -153,30 +153,33 @@ public class TasksService {
 
   @Transactional
   public EventEngineTask updateTask(@Valid EventEngineTask update) {
-    EventEngineTask eventEngineTask = getEventEngineTask(update.getTenantId(), update.getId()).orElseThrow(() ->
+    EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(update.getTenantId(), update.getId()).orElseThrow(() ->
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             update.getId(), update.getTenantId())));
     log.info("Updating event engine task={} with new values={}", update.getId(), update);
+    boolean needsUpdate = false;
     if(!StringUtils.isEmpty(update.getName()) && !eventEngineTask.getName().equals(update.getName()))  {
       log.info("changing name={} to {} ",eventEngineTask.getName(), update.getName());
       eventEngineTask.setName(update.getName());
-    } else if(!StringUtils.isEmpty(update.getMeasurement()) && !update.getMeasurement().equals(eventEngineTask.getMeasurement())){
+    }
+    if(!StringUtils.isEmpty(update.getMeasurement()) && !update.getMeasurement().equals(eventEngineTask.getMeasurement())){
       log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), update.getMeasurement());
       eventEngineTask.setMeasurement(update.getMeasurement());
-      eventEngineTask = updateMeasurementAndTaskParameters(eventEngineTask, update);
-    } else if(update.getTaskParameters() != null && !update.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
-      log.info("changing task parameters");
+      needsUpdate = true;
+    }
+    if(update.getTaskParameters() != null && !update.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
+      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), update.getTaskParameters());
       eventEngineTask.setTaskParameters(update.getTaskParameters());
-      eventEngineTask = updateMeasurementAndTaskParameters(eventEngineTask, update);
+      needsUpdate = true;
+    }
+
+    if(needsUpdate) {
+      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask, update);
     }
     return eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  public Optional<EventEngineTask> getEventEngineTask(String tenantId, UUID uuid)  {
-    return eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid);
-  }
-
-  private EventEngineTask updateMeasurementAndTaskParameters(EventEngineTask eventEngineTask, EventEngineTask update) {
+  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask, EventEngineTask update) {
     log.info("deleting existing kapacitors event and creating new events");
     // Remove all kapacitor tasks and its associated ids
     deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),

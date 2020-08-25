@@ -118,7 +118,6 @@ public class TasksServiceTest {
   @After
   public void tearDown() throws Exception {
     eventEngineTaskRepository.deleteAll();
-    entityManager.flush();
   }
 
   @Test
@@ -560,6 +559,7 @@ public class TasksServiceTest {
   }
 
   @Test
+  @Transactional
   public void testUpdate_update_name() throws IOException {
     EventEngineTask eventEngineTask = buildEventEngineTask();
 
@@ -583,7 +583,7 @@ public class TasksServiceTest {
 
     final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
     assertThat(retrieved).isPresent();
-    assertThat(retrieved.get().getName()).isEqualTo(result.getName());
+    assertThat(retrieved.get().getName()).isEqualTo("measurement_new");
 
     mockKapacitorServer.verify();
 
@@ -594,7 +594,7 @@ public class TasksServiceTest {
 
   @Transactional
   @Test
-  public void testUpdate_update_measurement() throws IOException {
+  public void testUpdate_update_measurementAndTaskParameters() throws IOException {
     EventEngineTask eventEngineTask = buildEventEngineTask();
 
     final KapacitorTaskId taskId = new KapacitorTaskId()
@@ -650,6 +650,7 @@ public class TasksServiceTest {
     EventEngineTask eventEngineTaskExpected = buildEventEngineTask();
     BeanUtils.copyProperties(eventEngineTask, eventEngineTaskExpected);
     eventEngineTaskExpected.setMeasurement("mem");
+    eventEngineTaskExpected.getTaskParameters().setCriticalStateDuration(3);
     final EventEngineTask result = tasksService.updateTask(eventEngineTaskExpected);
 
     // VERIFY
@@ -664,7 +665,8 @@ public class TasksServiceTest {
 
     final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
     assertThat(retrieved).isPresent();
-    assertThat(retrieved.get().getMeasurement()).isEqualTo(result.getMeasurement());
+    assertThat(retrieved.get().getMeasurement()).isEqualTo("mem");
+    assertThat(retrieved.get().getTaskParameters().getCriticalStateDuration()).isEqualTo(3);
 
     mockKapacitorServer.verify();
 
