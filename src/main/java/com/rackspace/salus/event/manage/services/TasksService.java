@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
-import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -152,34 +151,34 @@ public class TasksService {
   }
 
   @Transactional
-  public EventEngineTask updateTask(@Valid EventEngineTask update) {
-    EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(update.getTenantId(), update.getId()).orElseThrow(() ->
+  public EventEngineTask updateTask(String tenantId, UUID uuid, CreateTask createTask) {
+    EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid).orElseThrow(() ->
         new NotFoundException(String.format("No Event found for %s on tenant %s",
-            update.getId(), update.getTenantId())));
-    log.info("Updating event engine task={} with new values={}", update.getId(), update);
+            uuid, tenantId)));
+    log.info("Updating event engine task={} with new values={}", uuid, createTask);
     boolean needsUpdate = false;
-    if(!StringUtils.isEmpty(update.getName()) && !eventEngineTask.getName().equals(update.getName()))  {
-      log.info("changing name={} to {} ",eventEngineTask.getName(), update.getName());
-      eventEngineTask.setName(update.getName());
+    if(!StringUtils.isEmpty(createTask.getName()) && !eventEngineTask.getName().equals(createTask.getName()))  {
+      log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), createTask.getName());
+      eventEngineTask.setName(createTask.getName());
     }
-    if(!StringUtils.isEmpty(update.getMeasurement()) && !update.getMeasurement().equals(eventEngineTask.getMeasurement())){
-      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), update.getMeasurement());
-      eventEngineTask.setMeasurement(update.getMeasurement());
+    if(!StringUtils.isEmpty(createTask.getMeasurement()) && !createTask.getMeasurement().equals(eventEngineTask.getMeasurement())){
+      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), createTask.getMeasurement());
+      eventEngineTask.setMeasurement(createTask.getMeasurement());
       needsUpdate = true;
     }
-    if(update.getTaskParameters() != null && !update.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
-      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), update.getTaskParameters());
-      eventEngineTask.setTaskParameters(update.getTaskParameters());
+    if(createTask.getTaskParameters() != null && !createTask.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
+      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), createTask.getTaskParameters());
+      eventEngineTask.setTaskParameters(createTask.getTaskParameters());
       needsUpdate = true;
     }
 
     if(needsUpdate) {
-      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask, update);
+      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask, createTask);
     }
     return eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask, EventEngineTask update) {
+  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask, CreateTask createTask) {
     log.info("deleting existing kapacitors event and creating new events");
     // Remove all kapacitor tasks and its associated ids
     deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),

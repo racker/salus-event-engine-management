@@ -21,7 +21,6 @@ import com.rackspace.salus.event.manage.model.CreateTask;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.ValidationGroups;
-import com.rackspace.salus.event.manage.services.EventConversionService;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
@@ -65,14 +64,11 @@ public class TasksApiController {
 
   private final TasksService tasksService;
   private final TestEventTaskService testEventTaskService;
-  private final EventConversionService eventConversionService;
 
   @Autowired
-  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService,
-      EventConversionService eventConversionService) {
+  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService) {
     this.tasksService = tasksService;
     this.testEventTaskService = testEventTaskService;
-    this.eventConversionService = eventConversionService;
   }
 
   @PostMapping("/tenant/{tenantId}/tasks")
@@ -95,7 +91,7 @@ public class TasksApiController {
       @PathVariable UUID uuid,
       @RequestBody @Validated(ValidationGroups.Update.class) CreateTask task
   ) {
-    final EventEngineTask eventEngineTask = tasksService.updateTask(eventConversionService.convertFromInput(tenantId, uuid, task));
+    final EventEngineTask eventEngineTask = tasksService.updateTask(tenantId, uuid, task);
 
     return new EventEngineTaskDTO(eventEngineTask);
   }

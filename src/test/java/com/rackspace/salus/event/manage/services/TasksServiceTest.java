@@ -59,7 +59,6 @@ import javax.transaction.Transactional;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockRestServiceServer;
@@ -106,9 +105,6 @@ public class TasksServiceTest {
 
   @MockBean
   TickScriptBuilder tickScriptBuilder;
-
-  @MockBean
-  EventConversionService eventConversionService;
 
   @Autowired
   EntityManager entityManager;
@@ -570,13 +566,13 @@ public class TasksServiceTest {
     eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
     eventEngineTask.setId(taskId.getBaseId());
 
-    entityManager.persist(eventEngineTask);
-    entityManager.flush();
+    eventEngineTaskRepository.save(eventEngineTask);
+
     Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
 
     // EXECUTE
-    eventEngineTask.setName("measurement_new");
-    final EventEngineTask result = tasksService.updateTask(eventEngineTask);
+    CreateTask createTask = new CreateTask().setName("measurement_new");
+    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(), createTask);
 
     // VERIFY
     assertThat(result).isNotNull();
@@ -647,11 +643,10 @@ public class TasksServiceTest {
 
 
     // EXECUTE
-    EventEngineTask eventEngineTaskExpected = buildEventEngineTask();
-    BeanUtils.copyProperties(eventEngineTask, eventEngineTaskExpected);
-    eventEngineTaskExpected.setMeasurement("mem");
-    eventEngineTaskExpected.getTaskParameters().setCriticalStateDuration(3);
-    final EventEngineTask result = tasksService.updateTask(eventEngineTaskExpected);
+    final CreateTask createTask = buildCreateTask();
+    createTask.setMeasurement("mem");
+    createTask.getTaskParameters().setCriticalStateDuration(3);
+    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(), createTask);
 
     // VERIFY
 
