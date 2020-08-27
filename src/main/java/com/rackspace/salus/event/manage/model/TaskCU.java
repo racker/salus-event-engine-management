@@ -24,7 +24,7 @@ import lombok.Data;
 
 
 @Data
-public class CreateTask {
+public class TaskCU {
 
   @NotEmpty(groups = ValidationGroups.Create.class)
   String name;

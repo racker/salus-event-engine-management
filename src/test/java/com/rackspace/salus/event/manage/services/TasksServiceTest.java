@@ -38,7 +38,7 @@ import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
 import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.NotFoundException;
-import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
@@ -150,7 +150,7 @@ public class TasksServiceTest {
         .andExpect(content().json(requestJson))
         .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
-    final CreateTask taskIn = buildCreateTask();
+    final TaskCU taskIn = buildCreateTask();
 
     // EXECUTE
 
@@ -240,7 +240,7 @@ public class TasksServiceTest {
         .andExpect(method(HttpMethod.DELETE))
         .andRespond(withNoContent());
 
-    final CreateTask taskIn = buildCreateTask();
+    final TaskCU taskIn = buildCreateTask();
 
     // EXECUTE
 
@@ -278,7 +278,7 @@ public class TasksServiceTest {
     when(eventEnginePicker.pickAll())
         .thenReturn(Collections.emptyList());
 
-    final CreateTask taskIn = buildCreateTask();
+    final TaskCU taskIn = buildCreateTask();
 
     // EXECUTE
 
@@ -338,7 +338,7 @@ public class TasksServiceTest {
         .andExpect(content().json(requestJson))
         .andRespond(withBadRequest());
 
-    final CreateTask taskIn = buildCreateTask();
+    final TaskCU taskIn = buildCreateTask();
 
     // EXECUTE
 
@@ -532,8 +532,8 @@ public class TasksServiceTest {
     );
   }
 
-  private static CreateTask buildCreateTask() {
-    return new CreateTask()
+  private static TaskCU buildCreateTask() {
+    return new TaskCU()
         .setName("task-1")
         .setMeasurement("cpu")
         .setTaskParameters(
@@ -571,8 +571,9 @@ public class TasksServiceTest {
     Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
 
     // EXECUTE
-    CreateTask createTask = new CreateTask().setName("measurement_new");
-    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(), createTask);
+    TaskCU taskCU = new TaskCU().setName("measurement_new");
+    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(),
+        taskCU);
 
     // VERIFY
     assertThat(result).isNotNull();
@@ -643,10 +644,11 @@ public class TasksServiceTest {
 
 
     // EXECUTE
-    final CreateTask createTask = buildCreateTask();
-    createTask.setMeasurement("mem");
-    createTask.getTaskParameters().setCriticalStateDuration(3);
-    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(), createTask);
+    final TaskCU taskCU = buildCreateTask();
+    taskCU.setMeasurement("mem");
+    taskCU.getTaskParameters().setCriticalStateDuration(3);
+    final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(),
+        taskCU);
 
     // VERIFY
 
@@ -672,7 +674,7 @@ public class TasksServiceTest {
 
   private static EventEngineTask buildEventEngineTask()  {
     UUID uuid = UUID.randomUUID();
-    final CreateTask taskIn = buildCreateTask();
+    final TaskCU taskIn = buildCreateTask();
 
     final EventEngineTask eventEngineTask = new EventEngineTask()
         .setTenantId("t-1")

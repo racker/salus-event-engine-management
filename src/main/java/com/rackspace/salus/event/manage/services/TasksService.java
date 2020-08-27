@@ -22,7 +22,7 @@ import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.NotFoundException;
-import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.model.kapacitor.DbRp;
 import com.rackspace.salus.event.model.kapacitor.Task;
 import com.rackspace.salus.event.model.kapacitor.Task.Status;
@@ -71,7 +71,7 @@ public class TasksService {
   }
 
   @Transactional
-  public EventEngineTask createTask(String tenantId, CreateTask in) {
+  public EventEngineTask createTask(String tenantId, TaskCU in) {
 
     final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
     final Task task = new Task()
@@ -151,34 +151,34 @@ public class TasksService {
   }
 
   @Transactional
-  public EventEngineTask updateTask(String tenantId, UUID uuid, CreateTask createTask) {
+  public EventEngineTask updateTask(String tenantId, UUID uuid, TaskCU taskCU) {
     EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid).orElseThrow(() ->
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             uuid, tenantId)));
-    log.info("Updating event engine task={} with new values={}", uuid, createTask);
+    log.info("Updating event engine task={} with new values={}", uuid, taskCU);
     boolean needsUpdate = false;
-    if(!StringUtils.isEmpty(createTask.getName()) && !eventEngineTask.getName().equals(createTask.getName()))  {
-      log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), createTask.getName());
-      eventEngineTask.setName(createTask.getName());
+    if(!StringUtils.isEmpty(taskCU.getName()) && !eventEngineTask.getName().equals(taskCU.getName()))  {
+      log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), taskCU.getName());
+      eventEngineTask.setName(taskCU.getName());
     }
-    if(!StringUtils.isEmpty(createTask.getMeasurement()) && !createTask.getMeasurement().equals(eventEngineTask.getMeasurement())){
-      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), createTask.getMeasurement());
-      eventEngineTask.setMeasurement(createTask.getMeasurement());
+    if(!StringUtils.isEmpty(taskCU.getMeasurement()) && !taskCU.getMeasurement().equals(eventEngineTask.getMeasurement())){
+      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), taskCU.getMeasurement());
+      eventEngineTask.setMeasurement(taskCU.getMeasurement());
       needsUpdate = true;
     }
-    if(createTask.getTaskParameters() != null && !createTask.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
-      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), createTask.getTaskParameters());
-      eventEngineTask.setTaskParameters(createTask.getTaskParameters());
+    if(taskCU.getTaskParameters() != null && !taskCU.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
+      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
+      eventEngineTask.setTaskParameters(taskCU.getTaskParameters());
       needsUpdate = true;
     }
 
     if(needsUpdate) {
-      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask, createTask);
+      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask);
     }
     return eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask, CreateTask createTask) {
+  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask) {
     log.info("deleting existing kapacitors event and creating new events");
     // Remove all kapacitor tasks and its associated ids
     deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
