@@ -17,7 +17,7 @@
 
 package com.rackspace.salus.event.manage.web.controller;
 
-import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.ValidationGroups;
@@ -43,6 +43,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -76,9 +77,21 @@ public class TasksApiController {
   @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
   public EventEngineTaskDTO createTask(
       @PathVariable String tenantId,
-      @RequestBody @Validated(ValidationGroups.Create.class) CreateTask task
+      @RequestBody @Validated(ValidationGroups.Create.class) TaskCU task
   ) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
+
+    return new EventEngineTaskDTO(eventEngineTask);
+  }
+
+  @PutMapping("/tenant/{tenantId}/tasks/{uuid}")
+  @ApiOperation(value = "Update specific Task for Tenant")
+  public EventEngineTaskDTO updateTask(
+      @PathVariable String tenantId,
+      @PathVariable UUID uuid,
+      @RequestBody @Validated(ValidationGroups.Update.class) TaskCU task
+  ) {
+    final EventEngineTask eventEngineTask = tasksService.updateTask(tenantId, uuid, task);
 
     return new EventEngineTaskDTO(eventEngineTask);
   }

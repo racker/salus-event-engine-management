@@ -29,5 +29,5 @@ public class TestTaskRequest {
   List<SimpleNameTagValueMetric> metrics;
 
   @NotNull @Valid
-  CreateTask task;
+  TaskCU task;
 }

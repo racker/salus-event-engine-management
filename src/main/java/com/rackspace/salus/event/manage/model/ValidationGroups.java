@@ -21,4 +21,5 @@ import javax.validation.groups.Default;
 public class ValidationGroups {
   public interface Create extends Default { }
   public interface Test extends Default { }
+  public interface Update extends Default { }
 }
