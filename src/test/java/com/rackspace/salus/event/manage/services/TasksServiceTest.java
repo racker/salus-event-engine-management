@@ -68,6 +68,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -103,6 +104,9 @@ public class TasksServiceTest {
 
   @MockBean
   TickScriptBuilder tickScriptBuilder;
+
+  @Autowired
+  JdbcTemplate jdbcTemplate;
 
   @After
   public void tearDown() throws Exception {
@@ -595,6 +599,7 @@ public class TasksServiceTest {
     eventEngineTask.setId(taskId.getBaseId());
 
     eventEngineTaskRepository.save(eventEngineTask);
+
     Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
 
     when(kapacitorTaskIdGenerator.updateTaskId(any(), any(), any()))
