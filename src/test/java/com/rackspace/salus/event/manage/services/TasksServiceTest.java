@@ -54,7 +54,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import org.junit.After;
 import org.junit.Test;
@@ -69,7 +68,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -105,11 +103,6 @@ public class TasksServiceTest {
 
   @MockBean
   TickScriptBuilder tickScriptBuilder;
-
-  @Autowired
-  EntityManager entityManager;
-  @Autowired
-  JdbcTemplate jdbcTemplate;
 
   @After
   public void tearDown() throws Exception {
@@ -601,8 +594,7 @@ public class TasksServiceTest {
     eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
     eventEngineTask.setId(taskId.getBaseId());
 
-    entityManager.persist(eventEngineTask);
-    entityManager.flush();
+    eventEngineTaskRepository.save(eventEngineTask);
     Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
 
     when(kapacitorTaskIdGenerator.updateTaskId(any(), any(), any()))

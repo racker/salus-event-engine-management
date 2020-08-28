@@ -162,12 +162,12 @@ public class TasksService {
       eventEngineTask.setName(taskCU.getName());
     }
     if(!StringUtils.isEmpty(taskCU.getMeasurement()) && !taskCU.getMeasurement().equals(eventEngineTask.getMeasurement())){
-      log.info("changing measurement={} to {} ",eventEngineTask.getMeasurement(), taskCU.getMeasurement());
+      log.info("changing measurement={} to updatedMeasurement={} ",eventEngineTask.getMeasurement(), taskCU.getMeasurement());
       eventEngineTask.setMeasurement(taskCU.getMeasurement());
       needsUpdate = true;
     }
     if(taskCU.getTaskParameters() != null && !taskCU.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
-      log.info("changing task parameters={} to {} ",eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
+      log.info("changing task parameters={} to updated taskParameters={} ",eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
       eventEngineTask.setTaskParameters(taskCU.getTaskParameters());
       needsUpdate = true;
     }
