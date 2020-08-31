@@ -639,7 +639,7 @@ public class TasksServiceTest {
     // EXECUTE
     final TaskCU taskCU = buildCreateTask();
     taskCU.setMeasurement("mem");
-    taskCU.getTaskParameters().setCriticalStateDuration(3);
+    taskCU.getTaskParameters().setCriticalStateDuration(5);
     final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(),
         taskCU);
 
@@ -656,7 +656,7 @@ public class TasksServiceTest {
     final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
     assertThat(retrieved).isPresent();
     assertThat(retrieved.get().getMeasurement()).isEqualTo("mem");
-    assertThat(retrieved.get().getTaskParameters().getCriticalStateDuration()).isEqualTo(3);
+    assertThat(retrieved.get().getTaskParameters().getCriticalStateDuration()).isEqualTo(5);
 
     mockKapacitorServer.verify();
 
