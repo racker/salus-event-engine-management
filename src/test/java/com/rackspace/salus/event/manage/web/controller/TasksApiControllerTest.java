@@ -22,7 +22,6 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -33,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.errors.TestTimedOutException;
-import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
@@ -243,7 +243,7 @@ public class TasksApiControllerTest {
 
     String tenantId = RandomStringUtils.randomAlphabetic(8);
 
-    CreateTask create = buildCreateTask(true);
+    TaskCU create = buildCreateTask(true);
 
     mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
         .content(objectMapper.writeValueAsString(create))
@@ -259,6 +259,30 @@ public class TasksApiControllerTest {
   }
 
   @Test
+  public void testUpdateTask() throws Exception {
+    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    when(tasksService.updateTask(anyString(), any(), any()))
+        .thenReturn(task);
+
+    String tenantId = RandomStringUtils.randomAlphabetic(8);
+    UUID uuid = UUID.randomUUID();
+
+    TaskCU create = buildCreateTask(true);
+
+    mockMvc.perform(put("/api/tenant/{tenantId}/tasks/{uuid}", tenantId, uuid)
+        .content(objectMapper.writeValueAsString(create))
+        .contentType(MediaType.APPLICATION_JSON)
+        .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(content()
+            .contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+    verify(tasksService).updateTask(tenantId, uuid, create);
+    verifyNoMoreInteractions(tasksService);
+  }
+
+  @Test
   public void testCreateTask_invalidBasicEvalNode() throws Exception {
     String tenantId = RandomStringUtils.randomAlphabetic(8);
 
@@ -268,7 +292,7 @@ public class TasksApiControllerTest {
             .setOperator("+")
             .setAs("new_metric"));
 
-    CreateTask create = buildCreateTask(true, customMetrics);
+    TaskCU create = buildCreateTask(true, customMetrics);
 
     mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
         .content(objectMapper.writeValueAsString(create))
@@ -291,7 +315,7 @@ public class TasksApiControllerTest {
             .setMetric("metric2")
             .setAs("rate2"));
 
-    CreateTask create = buildCreateTask(true, customMetrics);
+    TaskCU create = buildCreateTask(true, customMetrics);
 
     mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
         .content(objectMapper.writeValueAsString(create))
@@ -310,7 +334,7 @@ public class TasksApiControllerTest {
 
     String tenantId = RandomStringUtils.randomAlphabetic(8);
 
-    CreateTask create = buildCreateTask(false);
+    TaskCU create = buildCreateTask(false);
 
     mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
         .content(objectMapper.writeValueAsString(create))
@@ -342,14 +366,14 @@ public class TasksApiControllerTest {
   public void testTestEventTask_normal() throws Exception {
     final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
-    final CreateTask createTask = buildCreateTask(true);
+    final TaskCU taskCU = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
-    createTask.setName(null);
+    taskCU.setName(null);
     final TestTaskRequest testTaskRequest = new TestTaskRequest()
-        .setTask(createTask)
+        .setTask(taskCU)
         .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-                .setName(createTask.getMeasurement())
+                .setName(taskCU.getMeasurement())
         ));
 
     final TestTaskResult expectedResult = new TestTaskResult()
@@ -398,17 +422,17 @@ public class TasksApiControllerTest {
   public void testTestEventTask_partial() throws Exception {
     final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
-    final CreateTask createTask = buildCreateTask(true);
+    final TaskCU taskCU = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
-    createTask.setName(null);
+    taskCU.setName(null);
     final TestTaskRequest testTaskRequest = new TestTaskRequest()
-        .setTask(createTask)
+        .setTask(taskCU)
         .setMetrics(List.of(
             // send in two metrics
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-                .setName(createTask.getMeasurement()),
+                .setName(taskCU.getMeasurement()),
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-                .setName(createTask.getMeasurement())
+                .setName(taskCU.getMeasurement())
         ));
 
     final TestTaskResult expectedResult = new TestTaskResult()
@@ -463,14 +487,14 @@ public class TasksApiControllerTest {
   public void testTestEventTask_timedOut() throws Exception {
     final String tenantId = RandomStringUtils.randomAlphabetic(8);
 
-    final CreateTask createTask = buildCreateTask(true);
+    final TaskCU taskCU = buildCreateTask(true);
     // ...but ensure user doesn't have to name tasks being tested
-    createTask.setName(null);
+    taskCU.setName(null);
     final TestTaskRequest testTaskRequest = new TestTaskRequest()
-        .setTask(createTask)
+        .setTask(taskCU)
         .setMetrics(List.of(
             podamFactory.manufacturePojo(SimpleNameTagValueMetric.class)
-                .setName(createTask.getMeasurement())
+                .setName(taskCU.getMeasurement())
         ));
 
     final CompletableFuture<TestTaskResult> completableFuture = new CompletableFuture<>();
@@ -495,13 +519,13 @@ public class TasksApiControllerTest {
     verifyNoMoreInteractions(tasksService, testEventTaskService);
   }
 
-  private static CreateTask buildCreateTask(boolean setName) {
+  private static TaskCU buildCreateTask(boolean setName) {
     return buildCreateTask(setName, null);
   }
 
-  private static CreateTask buildCreateTask(boolean setName,
+  private static TaskCU buildCreateTask(boolean setName,
       List<MetricExpressionBase> customMetrics) {
-    return new CreateTask()
+    return new TaskCU()
         .setName(setName ? "this is my name" : null)
         .setMeasurement("cpu")
         .setTaskParameters(

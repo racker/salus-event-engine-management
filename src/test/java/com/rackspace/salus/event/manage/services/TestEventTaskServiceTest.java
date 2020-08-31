@@ -41,8 +41,7 @@ import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.discovery.NoPartitionsAvailableException;
 import com.rackspace.salus.event.manage.config.TestEventTaskProperties;
 import com.rackspace.salus.event.manage.errors.BackendException;
-import com.rackspace.salus.event.manage.errors.TestTimedOutException;
-import com.rackspace.salus.event.manage.model.CreateTask;
+import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
@@ -582,7 +581,7 @@ public class TestEventTaskServiceTest {
   private TestTaskRequest createTestTaskRequest(List<SimpleNameTagValueMetric> metrics) {
     return new TestTaskRequest()
         .setTask(
-            new CreateTask()
+            new TaskCU()
                 .setMeasurement("cpu")
                 .setTaskParameters(
                     new EventEngineTaskParameters()
