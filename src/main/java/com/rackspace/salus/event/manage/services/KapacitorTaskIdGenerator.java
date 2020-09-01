@@ -40,4 +40,14 @@ public class KapacitorTaskIdGenerator {
 
     return taskId;
   }
+
+  public KapacitorTaskId updateTaskId(String tenantId, String collectionName, UUID uuid) {
+    final KapacitorTaskId taskId = new KapacitorTaskId()
+        .setBaseId(uuid);
+    taskId.setKapacitorTaskId(String.format("%s-%s-%s",
+        tenantId.replace(COLON, UNDERSCORE), collectionName, taskId.getBaseId().toString()
+    ));
+
+    return taskId;
+  }
 }

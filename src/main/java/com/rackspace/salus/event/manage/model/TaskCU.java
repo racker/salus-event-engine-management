@@ -24,14 +24,14 @@ import lombok.Data;
 
 
 @Data
-public class CreateTask {
+public class TaskCU {
 
   @NotEmpty(groups = ValidationGroups.Create.class)
   String name;
 
-  @NotEmpty
+  @NotEmpty(groups = {ValidationGroups.Create.class, ValidationGroups.Test.class})
   String measurement;
 
-  @NotNull @Valid
+  @NotNull(groups = {ValidationGroups.Create.class, ValidationGroups.Test.class}) @Valid
   EventEngineTaskParameters taskParameters;
 }
