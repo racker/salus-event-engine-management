@@ -16,6 +16,9 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.common.config.MetricNames;
+import com.rackspace.salus.common.config.MetricTagValues;
+import com.rackspace.salus.common.config.MetricTags;
 import com.rackspace.salus.common.messaging.KafkaTopicProperties;
 import com.rackspace.salus.event.common.InfluxScope;
 import com.rackspace.salus.event.discovery.EngineInstance;
@@ -23,7 +26,6 @@ import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.discovery.NoPartitionsAvailableException;
 import com.rackspace.salus.event.manage.config.TestEventTaskProperties;
 import com.rackspace.salus.event.manage.errors.BackendException;
-import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
@@ -88,16 +90,17 @@ public class TestEventTaskService {
   private final ConcurrentHashMap<String/*correlationId*/, CompletableFuture<TestTaskResult>> pendingCompletables =
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String/*correlationId*/, EventResultCollector> collectedEvents = new ConcurrentHashMap<>();
+
+  MeterRegistry meterRegistry;
   private final Timer timerDuration;
-  private final Counter counterTimedOut;
-  private final Counter counterSuccess;
-  private final Counter counterFinishWithException;
-  private final Counter counterSetupFailed;
-  private final Counter counterFailedToDelete;
-  private final Counter counterConsumerIgnored;
-  private final Counter counterConsumerConsumed;
-  private final Counter counterConsumerMissingId;
-  private final Counter counterFailedToGetStats;
+
+  // metrics counters
+  private final Counter.Builder counterTimedOut;
+  private final Counter.Builder counterFinishWithException;
+  private final Counter.Builder counterFailedToDelete;
+  private final Counter.Builder counterFailedToGetStats;
+  private final Counter.Builder testEventTaskSuccess;
+  private final Counter.Builder testEventTaskConsumer;
 
   @Autowired
   public TestEventTaskService(EventEnginePicker eventEnginePicker,
@@ -118,18 +121,16 @@ public class TestEventTaskService {
     this.appName = appName;
     this.ourHostName = ourHostName;
 
+    this.meterRegistry = meterRegistry;
     meterRegistry.gaugeMapSize("test-event-tasks.pending", List.of(), pendingCompletables);
-    timerDuration = meterRegistry.timer("test-event-tasks.duration");
-    counterTimedOut = meterRegistry.counter("test-event-tasks.timed-out");
-    counterFinishWithException = meterRegistry.counter("test-event-tasks.exception");
-    counterSuccess = meterRegistry.counter("test-event-tasks.success");
-    counterSetupFailed = meterRegistry.counter("test-event-tasks.setup-failed");
-    counterFailedToDelete = meterRegistry.counter("test-event-tasks.failed-to-delete");
-    counterFailedToGetStats = meterRegistry.counter("test-event-tasks.failed-to-get-stats");
 
-    counterConsumerConsumed = meterRegistry.counter("test-event-tasks.consumer.consumed");
-    counterConsumerMissingId = meterRegistry.counter("test-event-tasks.consumer.missing-id");
-    counterConsumerIgnored = meterRegistry.counter("test-event-tasks.consumer.ignored");
+    timerDuration = meterRegistry.timer("test-event-tasks.duration");
+    counterTimedOut = Counter.builder("timed-out").tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
+    counterFinishWithException = Counter.builder("exception").tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
+    counterFailedToDelete = Counter.builder("failed-to-delete").tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
+    counterFailedToGetStats = Counter.builder("failed-to-get-stats").tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
+    testEventTaskConsumer = Counter.builder("consumer").tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
+    testEventTaskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED).tag(MetricTags.SERVICE_METRIC_TAG,"TestEventTask");
   }
 
   public CompletableFuture<TestTaskResult> performTestTask(String tenantId,
@@ -217,14 +218,16 @@ public class TestEventTaskService {
         } catch (Exception e) {
           log.warn("Failed to retrieve stats for task with id={} from instance={}",
               taskId, engineInstance, e);
-          counterFailedToGetStats.increment();
+          counterFailedToGetStats.tags(MetricTags.OPERATION_METRIC_TAG, "handleTestTaskCompletion", MetricTags.EXCEPTION_METRIC_TAG,"Failed to retrieve stats for task from instance")
+              .register(meterRegistry).increment();
         }
       }
 
       deleteTask(engineInstance, taskId);
 
       if (throwable instanceof TimeoutException) {
-        counterTimedOut.increment();
+        counterTimedOut.tags(MetricTags.OPERATION_METRIC_TAG, "handleTestTaskCompletion", MetricTags.EXCEPTION_METRIC_TAG,"Timed out waiting for test-event-task result")
+            .register(meterRegistry).increment();
         if (partialEvents.isEmpty()) {
           return new TestTaskResult().setErrors(List.of("Timed out waiting for test-event-task result"));
         } else {
@@ -236,7 +239,8 @@ public class TestEventTaskService {
         }
       } else if (throwable != null) {
         log.warn("Test-task with id={} completed with unexpected exception", taskId, throwable);
-        counterFinishWithException.increment();
+        counterFinishWithException.tags(MetricTags.OPERATION_METRIC_TAG, "handleTestTaskCompletion", MetricTags.EXCEPTION_METRIC_TAG,"Unexpected exception during test-event-task")
+            .register(meterRegistry).increment();
         if (throwable instanceof BackendException) {
           // just re-throw since BackendException originates from this service
           throw (BackendException) throwable;
@@ -245,7 +249,7 @@ public class TestEventTaskService {
         }
       } else {
         testTaskResult.getData().setStats(taskStats);
-        counterSuccess.increment();
+        testEventTaskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, "completed",MetricTags.OBJECT_TYPE_METRIC_TAG, "TestEventTask").register(meterRegistry).increment();
         return testTaskResult;
       }
     };
@@ -283,7 +287,6 @@ public class TestEventTaskService {
           engineInstance.getHost(), engineInstance.getPort()
       );
     } catch (RestClientException e) {
-      counterSetupFailed.increment();
       throw new BackendException(
           null,
           String
@@ -294,7 +297,6 @@ public class TestEventTaskService {
     }
 
     if (response.getStatusCode().isError()) {
-      counterSetupFailed.increment();
       String details = response.getBody() != null ? response.getBody().getError() : "";
       throw new BackendException(
           response,
@@ -315,7 +317,8 @@ public class TestEventTaskService {
           taskId
       );
     } catch (RestClientException e) {
-      counterFailedToDelete.increment();
+      counterFailedToDelete.tags(MetricTags.OPERATION_METRIC_TAG, "deleteTask", MetricTags.EXCEPTION_METRIC_TAG, e.getClass().getSimpleName())
+          .register(meterRegistry).increment();
       log.warn("Failed to delete task={} from kapacitorInstance={}", taskId, engineInstance, e);
     }
   }
@@ -442,7 +445,8 @@ public class TestEventTaskService {
       // is it in our pending map?
       final EventResultCollector collected = collectedEvents.get(taskId);
       if (collected != null) {
-        counterConsumerConsumed.increment();
+        testEventTaskConsumer.tags(MetricTags.OPERATION_METRIC_TAG, "consume",MetricTags.OBJECT_TYPE_METRIC_TAG,"TestEventTask","result","consumed").register(meterRegistry).increment();
+
         log.debug("Processing result for test-task={} from event={}", taskId, event);
         collected.add(
             new EventResult()
@@ -450,11 +454,10 @@ public class TestEventTaskService {
                 .setData(event.getData())
         );
       } else {
-        counterConsumerIgnored.increment();
         log.trace("Ignoring test-task-result id={} that isn't ours", taskId);
       }
     } else {
-      counterConsumerMissingId.increment();
+      testEventTaskConsumer.tags(MetricTags.OPERATION_METRIC_TAG, "consume",MetricTags.OBJECT_TYPE_METRIC_TAG,"TestEventTask","result","missing-id").register(meterRegistry).increment();
       log.warn("Task-task-result is missing id: {}", event);
     }
   }

@@ -47,6 +47,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparis
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import com.rackspace.salus.test.EnableTestContainersDatabase;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -64,6 +65,7 @@ import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockR
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
@@ -83,6 +85,7 @@ import org.springframework.web.client.ResourceAccessException;
 @EnableTestContainersDatabase
 // for mocking kapacitor interactions
 @AutoConfigureWebClient
+@Import({SimpleMeterRegistry.class})
 @AutoConfigureMockRestServiceServer
 public class TasksServiceTest {
 

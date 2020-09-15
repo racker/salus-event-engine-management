@@ -17,6 +17,9 @@
 
 package com.rackspace.salus.event.manage.services;
 
+import com.rackspace.salus.common.config.MetricNames;
+import com.rackspace.salus.common.config.MetricTagValues;
+import com.rackspace.salus.common.config.MetricTags;
 import com.rackspace.salus.event.common.InfluxScope;
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
@@ -30,6 +33,8 @@ import com.rackspace.salus.event.model.kapacitor.Task.Type;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,16 +63,24 @@ public class TasksService {
   private final KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
   private final TickScriptBuilder tickScriptBuilder;
 
+  MeterRegistry meterRegistry;
+
+  // metrics counters
+  private final Counter.Builder taskSuccess;
+
   @Autowired
   public TasksService(EventEnginePicker eventEnginePicker, RestTemplateBuilder restTemplateBuilder,
                       EventEngineTaskRepository eventEngineTaskRepository,
                       KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
-                      TickScriptBuilder tickScriptBuilder) {
+                      TickScriptBuilder tickScriptBuilder, MeterRegistry meterRegistry) {
     this.eventEnginePicker = eventEnginePicker;
     this.restTemplate = restTemplateBuilder.build();
     this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.kapacitorTaskIdGenerator = kapacitorTaskIdGenerator;
     this.tickScriptBuilder = tickScriptBuilder;
+
+    this.meterRegistry = meterRegistry;
+    taskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED).tag(MetricTags.SERVICE_METRIC_TAG,"Tasks");
   }
 
   @Transactional
@@ -94,7 +107,9 @@ public class TasksService {
         .setKapacitorTaskId(taskId.getKapacitorTaskId())
         .setTaskParameters(in.getTaskParameters());
 
-    return eventEngineTaskRepository.save(eventEngineTask);
+    EventEngineTask eventEngineTaskSaved = eventEngineTaskRepository.save(eventEngineTask);
+    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    return eventEngineTaskSaved;
   }
 
   public Optional<EventEngineTask> getTask(String tenantId, UUID id) {
@@ -121,6 +136,7 @@ public class TasksService {
         false);
 
     eventEngineTaskRepository.delete(eventEngineTask);
+    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
   }
 
   private void deleteTaskFromKapacitors(String kapacitorTaskId,
@@ -175,7 +191,9 @@ public class TasksService {
     if(needsUpdate) {
       eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask);
     }
-    return eventEngineTaskRepository.save(eventEngineTask);
+    EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
+    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    return eventEngineTaskUpdated;
   }
 
   private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask) {
