@@ -21,6 +21,7 @@ import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.ValidationGroups;
+import com.rackspace.salus.event.manage.services.TaskGenerator;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
@@ -53,12 +54,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/")
 @Api(description = "Event engine operations", authorizations = {
-        @Authorization(value = "repose_auth",
-                scopes = {
-                        @AuthorizationScope(scope = "write:event-task", description = "modify event tasks in your account"),
-                        @AuthorizationScope(scope = "read:event-task", description = "read your event tasks"),
-                        @AuthorizationScope(scope = "delete:event-task", description = "delete your event tasks")
-                })
+    @Authorization(value = "repose_auth",
+        scopes = {
+            @AuthorizationScope(scope = "write:event-task", description = "modify event tasks in your account"),
+            @AuthorizationScope(scope = "read:event-task", description = "read your event tasks"),
+            @AuthorizationScope(scope = "delete:event-task", description = "delete your event tasks")
+        })
 })
 public class TasksApiController {
 
@@ -66,7 +67,8 @@ public class TasksApiController {
   private final TestEventTaskService testEventTaskService;
 
   @Autowired
-  public TasksApiController(TasksService tasksService, TestEventTaskService testEventTaskService) {
+  public TasksApiController(TasksService tasksService,
+      TestEventTaskService testEventTaskService) {
     this.tasksService = tasksService;
     this.testEventTaskService = testEventTaskService;
   }
@@ -74,14 +76,14 @@ public class TasksApiController {
   @PostMapping("/tenant/{tenantId}/tasks")
   @ResponseStatus(HttpStatus.CREATED)
   @ApiOperation(value = "Creates Task for Tenant")
-  @ApiResponses(value = { @ApiResponse(code = 201, message = "Successfully Created Task")})
+  @ApiResponses(value = {@ApiResponse(code = 201, message = "Successfully Created Task")})
   public EventEngineTaskDTO createTask(
       @PathVariable String tenantId,
       @RequestBody @Validated(ValidationGroups.Create.class) TaskCU task
   ) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
-    return new EventEngineTaskDTO(eventEngineTask);
+    return TaskGenerator.generateDto(eventEngineTask);
   }
 
   @PutMapping("/tenant/{tenantId}/tasks/{uuid}")
@@ -93,7 +95,7 @@ public class TasksApiController {
   ) {
     final EventEngineTask eventEngineTask = tasksService.updateTask(tenantId, uuid, task);
 
-    return new EventEngineTaskDTO(eventEngineTask);
+    return TaskGenerator.generateDto(eventEngineTask);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks/{uuid}")
@@ -103,24 +105,25 @@ public class TasksApiController {
         () -> new NotFoundException(String.format("No task found for %s on tenant %s",
             uuid, tenantId
         )));
-    return new EventEngineTaskDTO(task);
+    return TaskGenerator.generateDto(task);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks")
   @ApiOperation(value = "Gets all Tasks for the specific Tenant")
-  public PagedContent<EventEngineTaskDTO> getTasks(@PathVariable String tenantId, Pageable pageable) {
+  public PagedContent<EventEngineTaskDTO> getTasks(@PathVariable String tenantId,
+      Pageable pageable) {
 
     return PagedContent.fromPage(
         tasksService.getTasks(tenantId, pageable)
-            .map(EventEngineTaskDTO::new));
+            .map(TaskGenerator::generateDto));
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @ApiOperation(value = "Deletes Task for Tenant")
-  @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
+  @ApiResponses(value = {@ApiResponse(code = 204, message = "Task Deleted")})
   public void deleteTask(@PathVariable String tenantId,
-                         @PathVariable UUID taskId) {
+      @PathVariable UUID taskId) {
     tasksService.deleteTask(tenantId, taskId);
   }
 
@@ -140,7 +143,7 @@ public class TasksApiController {
   @DeleteMapping("/admin/tenant/{tenantId}/tasks")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @ApiOperation(value = "Deletes all Tasks for Tenant")
-  @ApiResponses(value = { @ApiResponse(code = 204, message = "Task Deleted")})
+  @ApiResponses(value = {@ApiResponse(code = 204, message = "Task Deleted")})
   public void deleteTask(@PathVariable String tenantId) {
     tasksService.deleteAllTasksForTenant(tenantId);
   }
