@@ -17,7 +17,6 @@
 package com.rackspace.salus.event.manage.services;
 
 import com.rackspace.salus.common.config.MetricNames;
-import com.rackspace.salus.common.config.MetricTagValues;
 import com.rackspace.salus.common.config.MetricTags;
 import com.rackspace.salus.common.messaging.KafkaTopicProperties;
 import com.rackspace.salus.event.common.InfluxScope;

@@ -57,7 +57,6 @@ public class EventEngineTaskDTOTest {
 
     assertThat(dto.getId(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());
-    assertThat(dto.getKapacitorTaskId(), notNullValue());
     assertThat(dto.getName(), notNullValue());
     assertThat(dto.getMeasurement(), notNullValue());
     assertThat(dto.getTaskParameters(), notNullValue());
@@ -66,7 +65,6 @@ public class EventEngineTaskDTOTest {
 
     assertThat(dto.getId(), equalTo(task.getId()));
     assertThat(dto.getTenantId(), equalTo(task.getTenantId()));
-    assertThat(dto.getKapacitorTaskId(), equalTo(task.getKapacitorTaskId()));
     assertThat(dto.getName(), equalTo(task.getName()));
     assertThat(dto.getMeasurement(), equalTo(task.getMeasurement()));
     assertThat(dto.getTaskParameters(), equalTo(task.getTaskParameters()));
@@ -79,16 +77,13 @@ public class EventEngineTaskDTOTest {
     objectAsString = objectMapper.writerWithView(View.Public.class).writeValueAsString(dto);
     convertedDto = objectMapper.readValue(objectAsString, EventEngineTaskDTO.class);
     assertThat(convertedDto.getTenantId(), nullValue());
-    assertThat(convertedDto.getKapacitorTaskId(), nullValue());
 
     objectAsString = objectMapper.writerWithView(View.Admin.class).writeValueAsString(dto);
     convertedDto = objectMapper.readValue(objectAsString, EventEngineTaskDTO.class);
     assertThat(convertedDto.getTenantId(), notNullValue());
-    assertThat(convertedDto.getKapacitorTaskId(), notNullValue());
 
     objectAsString = objectMapper.writerWithView(View.Internal.class).writeValueAsString(dto);
     convertedDto = objectMapper.readValue(objectAsString, EventEngineTaskDTO.class);
     assertThat(convertedDto.getTenantId(), nullValue());
-    assertThat(convertedDto.getKapacitorTaskId(), nullValue());
   }
 }

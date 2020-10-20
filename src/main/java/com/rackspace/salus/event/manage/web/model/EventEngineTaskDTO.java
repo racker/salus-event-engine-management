@@ -35,8 +35,6 @@ public class EventEngineTaskDTO {
 
   String name;
   String measurement;
-  @JsonView(View.Admin.class)
-  String kapacitorTaskId;
   EventEngineTaskParameters taskParameters;
   String createdTimestamp;
   String updatedTimestamp;
@@ -44,7 +42,6 @@ public class EventEngineTaskDTO {
   public EventEngineTaskDTO(EventEngineTask entity) {
     this.id = entity.getId();
     this.tenantId = entity.getTenantId();
-    this.kapacitorTaskId = entity.getKapacitorTaskId();
     this.name = entity.getName();
     this.measurement = entity.getMeasurement();
     this.taskParameters = entity.getTaskParameters();
