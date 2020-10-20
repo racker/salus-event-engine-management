@@ -20,24 +20,23 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.common.config.MetricNames;
 import com.rackspace.salus.common.config.MetricTagValues;
 import com.rackspace.salus.common.config.MetricTags;
-import com.rackspace.salus.event.common.InfluxScope;
 import com.rackspace.salus.event.discovery.EngineInstance;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.NotFoundException;
+import com.rackspace.salus.event.manage.model.GenericTaskCU;
+import com.rackspace.salus.event.manage.model.SalusTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
-import com.rackspace.salus.event.model.kapacitor.DbRp;
-import com.rackspace.salus.event.model.kapacitor.Task;
-import com.rackspace.salus.event.model.kapacitor.Task.Status;
-import com.rackspace.salus.event.model.kapacitor.Task.Type;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
+import com.rackspace.salus.event.model.kapacitor.Task;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
+import com.rackspace.salus.telemetry.entities.subclass.GenericEventEngineTask;
+import com.rackspace.salus.telemetry.entities.subclass.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,7 +60,9 @@ public class TasksService {
   private final RestTemplate restTemplate;
   private final EventEngineTaskRepository eventEngineTaskRepository;
   private final KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
+  private final TaskGenerator taskGenerator;
   private final TickScriptBuilder tickScriptBuilder;
+
 
   MeterRegistry meterRegistry;
 
@@ -70,13 +71,15 @@ public class TasksService {
 
   @Autowired
   public TasksService(EventEnginePicker eventEnginePicker, RestTemplateBuilder restTemplateBuilder,
-                      EventEngineTaskRepository eventEngineTaskRepository,
-                      KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
-                      TickScriptBuilder tickScriptBuilder, MeterRegistry meterRegistry) {
+      EventEngineTaskRepository eventEngineTaskRepository,
+      KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
+      TaskGenerator taskGenerator,
+      TickScriptBuilder tickScriptBuilder, MeterRegistry meterRegistry) {
     this.eventEnginePicker = eventEnginePicker;
     this.restTemplate = restTemplateBuilder.build();
     this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.kapacitorTaskIdGenerator = kapacitorTaskIdGenerator;
+    this.taskGenerator = taskGenerator;
     this.tickScriptBuilder = tickScriptBuilder;
 
     this.meterRegistry = meterRegistry;
@@ -85,30 +88,14 @@ public class TasksService {
 
   @Transactional
   public EventEngineTask createTask(String tenantId, TaskCU in) {
-
-    final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
-    final Task task = new Task()
-        .setId(taskId.getKapacitorTaskId())
-        .setType(Type.stream)
-        .setDbrps(Collections.singletonList(new DbRp()
-            .setDb(tenantId)
-            .setRp(InfluxScope.INGEST_RETENTION_POLICY)
-            ))
-        .setScript(tickScriptBuilder.build(in.getMeasurement(), in.getTaskParameters()))
-        .setStatus(Status.enabled);
-
-    sendTaskToKapacitor(task, taskId);
-
-    final EventEngineTask eventEngineTask = new EventEngineTask()
-        .setId(taskId.getBaseId())
-        .setTenantId(tenantId)
-        .setMeasurement(in.getMeasurement())
-        .setName(in.getName())
-        .setKapacitorTaskId(taskId.getKapacitorTaskId())
-        .setTaskParameters(in.getTaskParameters());
+    final EventEngineTask eventEngineTask = taskGenerator.createTask(tenantId, in);
 
     EventEngineTask eventEngineTaskSaved = eventEngineTaskRepository.save(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
+
     return eventEngineTaskSaved;
   }
 
@@ -136,7 +123,10 @@ public class TasksService {
         false);
 
     eventEngineTaskRepository.delete(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
   }
 
   private void deleteTaskFromKapacitors(String kapacitorTaskId,
@@ -171,54 +161,103 @@ public class TasksService {
     EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid).orElseThrow(() ->
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             uuid, tenantId)));
+
     log.info("Updating event engine task={} with new values={}", uuid, taskCU);
-    boolean needsUpdate = false;
-    if(!StringUtils.isEmpty(taskCU.getName()) && !eventEngineTask.getName().equals(taskCU.getName()))  {
+    boolean redeployTask = false;
+    if (!StringUtils.isEmpty(taskCU.getName()) && !eventEngineTask.getName().equals(taskCU.getName()))  {
       log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), taskCU.getName());
       eventEngineTask.setName(taskCU.getName());
     }
-    if(!StringUtils.isEmpty(taskCU.getMeasurement()) && !taskCU.getMeasurement().equals(eventEngineTask.getMeasurement())){
-      log.info("changing measurement={} to updatedMeasurement={} ",eventEngineTask.getMeasurement(), taskCU.getMeasurement());
-      eventEngineTask.setMeasurement(taskCU.getMeasurement());
-      needsUpdate = true;
-    }
-    if(taskCU.getTaskParameters() != null && !taskCU.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
-      log.info("changing task parameters={} to updated taskParameters={} ",eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
+
+    if (taskCU.getTaskParameters() != null && !taskCU.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
+      log.info("changing task parameters={} to updated taskParameters={} ",
+          eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
+
       eventEngineTask.setTaskParameters(taskCU.getTaskParameters());
-      needsUpdate = true;
+      redeployTask = true;
     }
 
-    if(needsUpdate) {
-      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask);
+    if (handleSystemSpecificTaskUpdate(taskCU, eventEngineTask)) {
+      redeployTask = true;
     }
+
+    if (redeployTask) {
+      // TODO trigger redeploy of esper task
+    }
+
     EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
+
     return eventEngineTaskUpdated;
   }
 
-  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask) {
-    log.info("deleting existing kapacitors event and creating new events");
-    // Remove all kapacitor tasks and its associated ids
-    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
-        false);
+  /**
+   * Helper method which calls the required type specific method.
+   *
+   * @param eventEngineTask
+   * @param taskCU
+   * @return True if any value was modified, otherwise false.
+   */
+  private boolean handleSystemSpecificTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
+    if (eventEngineTask instanceof SalusEventEngineTask && taskCU instanceof SalusTaskCU) {
+      return handleSalusTaskUpdate(taskCU, eventEngineTask);
+    } else {
+      return handleGenericTaskUpdate(taskCU, eventEngineTask);
+    }
+  }
 
-    //update existing KapacitorTaskId with tenant and measurement data
-    final KapacitorTaskId taskId = kapacitorTaskIdGenerator
-        .updateTaskId(eventEngineTask.getTenantId(), eventEngineTask.getMeasurement(), eventEngineTask.getId());
-    eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
+  /**
+   * Determines if any generic task type parameters have changed and updates them if so.
+   *
+   * @param taskCU
+   * @param eventEngineTask
+   * @return True if any value was modified, otherwise false.
+   */
+  private boolean handleGenericTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
+    if (!(taskCU instanceof GenericTaskCU && eventEngineTask instanceof GenericEventEngineTask)) {
+      throw new IllegalArgumentException(
+          String.format("Invalid fields provided for '%s' task", eventEngineTask.getMonitoringSystem()));
+    }
 
-    final Task task = new Task()
-        .setId(eventEngineTask.getKapacitorTaskId())
-        .setType(Type.stream)
-        .setDbrps(Collections.singletonList(new DbRp()
-            .setDb(eventEngineTask.getTenantId())
-            .setRp(InfluxScope.INGEST_RETENTION_POLICY)
-        ))
-        .setScript(tickScriptBuilder.build(eventEngineTask.getMeasurement(), eventEngineTask.getTaskParameters()))
-        .setStatus(Status.enabled);
+    GenericTaskCU genericCU = (GenericTaskCU) taskCU;
+    GenericEventEngineTask genericTask = (GenericEventEngineTask) eventEngineTask;
 
-    sendTaskToKapacitor(task, taskId);
-    return eventEngineTask;
+    if (!StringUtils.isEmpty(genericCU.getMeasurement()) &&
+        !genericCU.getMeasurement().equals(genericTask.getMeasurement())) {
+
+      log.info("changing measurement={} to updatedMeasurement={}",
+          genericTask.getMeasurement(), genericCU.getMeasurement());
+
+      genericTask.setMeasurement(genericCU.getMeasurement());
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Determines if any salus specific parameters have changed and updates them if so.
+   *
+   * @param taskCU
+   * @param eventEngineTask
+   * @return True if any value was modified, otherwise false.
+   */
+  private boolean handleSalusTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
+    SalusTaskCU salusCU = (SalusTaskCU) taskCU;
+    SalusEventEngineTask salusTask = (SalusEventEngineTask) eventEngineTask;
+    boolean updateRequired = false;
+
+    if (salusCU.getMonitorType() != null && salusCU.getMonitorType() != salusTask.getMonitorType()) {
+      salusTask.setMonitorType(salusCU.getMonitorType());
+      updateRequired = true;
+    }
+    if (salusCU.getSelectorScope() != null && salusCU.getSelectorScope() != salusTask.getSelectorScope()) {
+      salusTask.setSelectorScope(salusCU.getSelectorScope());
+      updateRequired = true;
+    }
+    return updateRequired;
   }
 
   private void sendTaskToKapacitor(Task task, KapacitorTaskId taskId) {

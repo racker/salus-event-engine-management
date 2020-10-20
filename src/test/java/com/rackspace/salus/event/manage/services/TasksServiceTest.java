@@ -38,6 +38,7 @@ import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
 import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.NotFoundException;
+import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
@@ -45,7 +46,9 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.subclass.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
+import com.rackspace.salus.telemetry.repositories.GenericEventEngineTaskRepository;
 import com.rackspace.salus.test.EnableTestContainersDatabase;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -65,7 +68,6 @@ import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockR
 import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
@@ -79,18 +81,25 @@ import org.springframework.web.client.ResourceAccessException;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
     TasksService.class,
-    DatabaseConfig.class
+    DatabaseConfig.class,
+    TaskGenerator.class,
+    SimpleMeterRegistry.class
 })
 @AutoConfigureDataJpa
 @EnableTestContainersDatabase
 // for mocking kapacitor interactions
 @AutoConfigureWebClient
-@Import({SimpleMeterRegistry.class})
 @AutoConfigureMockRestServiceServer
 public class TasksServiceTest {
 
   @Autowired
   TasksService tasksService;
+
+  @Autowired
+  TaskGenerator taskGenerator;
+
+  @MockBean
+  TaskPartitionIdGenerator partitionIdGenerator;
 
   @Autowired
   private MockRestServiceServer mockKapacitorServer;
@@ -100,6 +109,9 @@ public class TasksServiceTest {
 
   @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
+
+  @Autowired
+  GenericEventEngineTaskRepository genericTaskRepository;
 
   @MockBean
   KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
@@ -511,13 +523,15 @@ public class TasksServiceTest {
   }
 
   private void saveTask(UUID taskDbId) {
-    final EventEngineTask eventEngineTask = new EventEngineTask()
+    final EventEngineTask eventEngineTask = new GenericEventEngineTask()
+        .setMeasurement("cpu")
         .setId(taskDbId)
         .setName("task-1")
         .setTenantId("t-1")
         .setKapacitorTaskId("k-1")
-        .setMeasurement("cpu")
-        .setTaskParameters(new EventEngineTaskParameters());
+        .setTaskParameters(new EventEngineTaskParameters())
+        .setPartition(0)
+        .setMonitoringSystem("SALUS");
     eventEngineTaskRepository.save(eventEngineTask);
   }
 
@@ -528,10 +542,10 @@ public class TasksServiceTest {
     );
   }
 
-  private static TaskCU buildCreateTask() {
-    return new TaskCU()
-        .setName("task-1")
+  private static GenericTaskCU buildCreateTask() {
+    return (GenericTaskCU) new GenericTaskCU()
         .setMeasurement("cpu")
+        .setName("task-1")
         .setTaskParameters(
             new EventEngineTaskParameters()
                 .setLabelSelector(
@@ -567,7 +581,7 @@ public class TasksServiceTest {
     Optional<EventEngineTask> optionalEventEngineTask = Optional.of(eventEngineTask);
 
     // EXECUTE
-    TaskCU taskCU = new TaskCU().setName("measurement_new");
+    TaskCU taskCU = new GenericTaskCU().setName("measurement_new");
     final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(),
         taskCU);
 
@@ -640,7 +654,7 @@ public class TasksServiceTest {
 
 
     // EXECUTE
-    final TaskCU taskCU = buildCreateTask();
+    final GenericTaskCU taskCU = buildCreateTask();
     taskCU.setMeasurement("mem");
     taskCU.getTaskParameters().setCriticalStateDuration(5);
     final EventEngineTask result = tasksService.updateTask(eventEngineTask.getTenantId(), taskId.getBaseId(),
@@ -656,7 +670,7 @@ public class TasksServiceTest {
 
     verify(eventEnginePicker, times(2)).pickAll();
 
-    final Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(result.getId());
+    final Optional<GenericEventEngineTask> retrieved = genericTaskRepository.findById(result.getId());
     assertThat(retrieved).isPresent();
     assertThat(retrieved.get().getMeasurement()).isEqualTo("mem");
     assertThat(retrieved.get().getTaskParameters().getCriticalStateDuration()).isEqualTo(5);
@@ -670,13 +684,17 @@ public class TasksServiceTest {
 
   private static EventEngineTask buildEventEngineTask()  {
     UUID uuid = UUID.randomUUID();
-    final TaskCU taskIn = buildCreateTask();
+    final GenericTaskCU taskIn = buildCreateTask();
 
-    final EventEngineTask eventEngineTask = new EventEngineTask()
+    final EventEngineTask eventEngineTask = new GenericEventEngineTask()
+        .setMeasurement(taskIn.getMeasurement())
         .setTenantId("t-1")
         .setName(taskIn.getName())
         .setTaskParameters(taskIn.getTaskParameters())
-        .setMeasurement(taskIn.getMeasurement());
+        .setPartition(0)
+        .setMonitoringSystem("SALUS")
+        .setId(uuid);
+
     return eventEngineTask;
   }
 }

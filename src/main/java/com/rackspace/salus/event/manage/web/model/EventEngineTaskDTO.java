@@ -27,7 +27,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data @NoArgsConstructor
-public class EventEngineTaskDTO {
+public abstract class EventEngineTaskDTO {
   UUID id;
 
   @JsonView(View.Admin.class)
@@ -46,7 +46,6 @@ public class EventEngineTaskDTO {
     this.tenantId = entity.getTenantId();
     this.kapacitorTaskId = entity.getKapacitorTaskId();
     this.name = entity.getName();
-    this.measurement = entity.getMeasurement();
     this.taskParameters = entity.getTaskParameters();
     this.createdTimestamp = DateTimeFormatter.ISO_INSTANT.format(entity.getCreatedTimestamp());
     this.updatedTimestamp = DateTimeFormatter.ISO_INSTANT.format(entity.getUpdatedTimestamp());

@@ -23,8 +23,8 @@ import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.common.web.View;
-import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.subclass.GenericEventEngineTask;
 import org.junit.Test;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
@@ -51,9 +51,9 @@ public class EventEngineTaskDTOTest {
 
   @Test
   public void testFieldsCovered() throws Exception {
-    final EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    final GenericEventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class);
 
-    final EventEngineTaskDTO dto = new EventEngineTaskDTO(task);
+    final EventEngineTaskDTO dto = new GenericEventEngineTaskDTO(task);
 
     assertThat(dto.getId(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());
