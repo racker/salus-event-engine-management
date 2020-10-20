@@ -20,12 +20,13 @@ package com.rackspace.salus.event.manage.services;
 import static java.util.Collections.singletonMap;
 
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
-import com.rackspace.salus.event.manage.model.TaskCU;
+import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
+import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import com.rackspace.salus.test.EnableTestContainersDatabase;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -45,6 +46,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
     TasksService.class,
+    TaskGenerator.class,
     DatabaseConfig.class
 })
 @AutoConfigureDataJpa
@@ -54,6 +56,9 @@ public class TasksServiceTest {
 
   @Autowired
   TasksService tasksService;
+
+  @Autowired
+  TaskGenerator taskGenerator;
 
   @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
@@ -90,19 +95,20 @@ public class TasksServiceTest {
   }
 
   private void saveTask(UUID taskDbId) {
-    final EventEngineTask eventEngineTask = new EventEngineTask()
+    final EventEngineTask eventEngineTask = new GenericEventEngineTask()
+        .setMeasurement("cpu")
         .setId(taskDbId)
         .setName("task-1")
         .setTenantId("t-1")
-        .setMeasurement("cpu")
-        .setTaskParameters(new EventEngineTaskParameters());
+        .setTaskParameters(new EventEngineTaskParameters())
+        .setMonitoringSystem("SALUS");
     eventEngineTaskRepository.save(eventEngineTask);
   }
 
-  private static TaskCU buildCreateTask() {
-    return new TaskCU()
-        .setName("task-1")
+  private static GenericTaskCU buildCreateTask() {
+    return (GenericTaskCU) new GenericTaskCU()
         .setMeasurement("cpu")
+        .setName("task-1")
         .setTaskParameters(
             new EventEngineTaskParameters()
                 .setLabelSelector(
@@ -135,14 +141,15 @@ public class TasksServiceTest {
 
   private static EventEngineTask buildEventEngineTask()  {
     UUID uuid = UUID.randomUUID();
-    final TaskCU taskIn = buildCreateTask();
+    final GenericTaskCU taskIn = buildCreateTask();
 
-    final EventEngineTask eventEngineTask = new EventEngineTask()
+    final EventEngineTask eventEngineTask = new GenericEventEngineTask()
+        .setMeasurement(taskIn.getMeasurement())
+        .setMonitoringSystem("SALUS")
         .setId(uuid)
         .setTenantId("t-1")
         .setName(taskIn.getName())
-        .setTaskParameters(taskIn.getTaskParameters())
-        .setMeasurement(taskIn.getMeasurement());
+        .setTaskParameters(taskIn.getTaskParameters());
     return eventEngineTask;
   }
 }

@@ -16,35 +16,20 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Create;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Test;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
-import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
+import com.rackspace.salus.telemetry.model.ConfigSelectorScope;
+import com.rackspace.salus.telemetry.model.MonitorType;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-
+import lombok.EqualsAndHashCode;
 
 @Data
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "monitoringSystem")
-@JsonSubTypes({
-    @JsonSubTypes.Type(name = "salus", value= SalusEventEngineTask.class),
-    @JsonSubTypes.Type(name = "generic", value= GenericEventEngineTask.class)
-})
-public abstract class TaskCU {
-
-  @NotEmpty(groups = Create.class)
-  String name;
+@EqualsAndHashCode(callSuper = true)
+public class SalusTaskCU extends TaskCU {
+  @NotNull(groups = {Create.class, Test.class})
+  MonitorType monitorType;
 
   @NotNull(groups = {Create.class, Test.class})
-  MonitoringSystem monitoringSystem;
-
-  @NotNull(groups = {Create.class, Test.class})
-  @Valid
-  EventEngineTaskParameters taskParameters;
+  ConfigSelectorScope monitorScope;
 }
