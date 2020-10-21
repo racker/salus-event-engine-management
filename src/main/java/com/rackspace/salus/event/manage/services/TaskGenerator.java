@@ -52,6 +52,12 @@ public class TaskGenerator {
     return task;
   }
 
+  public EventEngineTask updatePartition(EventEngineTask task) {
+    int partition = partitionIdGenerator.getPartitionForTask(task);
+    task.setPartition(partition);
+    return task;
+  }
+
   private EventEngineTask createSalusTask(String tenantId, SalusTaskCU in) {
     return new SalusEventEngineTask()
         .setMonitorType(in.getMonitorType())
