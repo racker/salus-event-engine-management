@@ -20,13 +20,13 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.common.config.MetricNames;
 import com.rackspace.salus.common.config.MetricTagValues;
 import com.rackspace.salus.common.config.MetricTags;
-import com.rackspace.salus.event.manage.errors.NotFoundException;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.SalusTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
+import com.rackspace.salus.telemetry.model.NotFoundException;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -89,16 +89,11 @@ public class TasksService {
   }
 
   @Transactional
-  public void deleteTask(String tenantId, UUID taskDbId) {
+  public void deleteTask(String tenantId, UUID id) {
 
-    final EventEngineTask eventEngineTask = eventEngineTaskRepository.findById(taskDbId)
-        .orElseThrow(() -> new NotFoundException("Unable to find the requested event engine task"));
-
-    if (!eventEngineTask.getTenantId().equals(tenantId)) {
-      log.info("Task={} was requested for deletion with incorrect tenant={}", taskDbId, tenantId);
-      // but keep the exception vague to avoid leaking exploitable info
-      throw new NotFoundException("Unable to find the requested event engine task");
-    }
+    final EventEngineTask eventEngineTask = getTask(tenantId, id).orElseThrow(() ->
+        new NotFoundException(String.format("No task found for %s on tenant %s",
+            id, tenantId)));
 
     eventEngineTaskRepository.delete(eventEngineTask);
 
@@ -111,13 +106,13 @@ public class TasksService {
   }
 
   public void deleteAllTasksForTenant(String tenant) {
-    eventEngineTaskRepository.findByTenantId(tenant, Pageable.unpaged())
+    getTasks(tenant, Pageable.unpaged())
         .forEach(task -> deleteTask(tenant, task.getId()));
   }
 
   @Transactional
   public EventEngineTask updateTask(String tenantId, UUID uuid, TaskCU taskCU) {
-    EventEngineTask eventEngineTask = eventEngineTaskRepository.findByTenantIdAndId(tenantId, uuid).orElseThrow(() ->
+    EventEngineTask eventEngineTask = getTask(tenantId, uuid).orElseThrow(() ->
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             uuid, tenantId)));
     log.info("Updating event engine task={} with new values={}", uuid, taskCU);
@@ -145,8 +140,13 @@ public class TasksService {
     if (redeployTask) {
       // TODO trigger redeploy of esper task
     }
+
     EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
+
     return eventEngineTaskUpdated;
   }
 
