@@ -16,7 +16,6 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.SalusTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
@@ -64,7 +63,7 @@ public class TaskGenerator {
         .setMonitorScope(in.getMonitorScope())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(MonitoringSystem.SALUS.name())
+        .setMonitoringSystem(in.getMonitoringSystem().name())
         .setTaskParameters(in.getTaskParameters());
   }
   private EventEngineTask createGenericTask(String tenantId, GenericTaskCU in) {
@@ -72,7 +71,7 @@ public class TaskGenerator {
         .setMeasurement(in.getMeasurement())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(MonitoringSystem.SALUS.name())
+        .setMonitoringSystem(in.getMonitoringSystem().name())
         .setTaskParameters(in.getTaskParameters());
   }
 
