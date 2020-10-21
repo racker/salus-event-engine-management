@@ -4,6 +4,7 @@
   "name": "my-test-task",
   "monitoringSystem": "UIM",
   "measurement": "disk",
+  "partitionId": 8,
   "taskParameters": {
     "criticalStateDuration": 5,
     "warningStateDuration": null,
