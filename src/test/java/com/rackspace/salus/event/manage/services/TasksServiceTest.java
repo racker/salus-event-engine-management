@@ -98,6 +98,18 @@ public class TasksServiceTest {
 
   }
 
+  @Test
+  @Transactional
+  public void testUpdate_update_name() throws IOException {
+
+  }
+
+  @Transactional
+  @Test
+  public void testUpdate_update_measurementAndTaskParameters() throws IOException {
+
+  }
+
   private void saveTask(UUID taskDbId) {
     final EventEngineTask eventEngineTask = new GenericEventEngineTask()
         .setMeasurement("cpu")
@@ -128,20 +140,8 @@ public class TasksServiceTest {
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
-                )
-        ));
-  }
-
-  @Test
-  @Transactional
-  public void testUpdate_update_name() throws IOException {
-
-  }
-
-  @Transactional
-  @Test
-  public void testUpdate_update_measurementAndTaskParameters() throws IOException {
-
+                    )
+                ));
   }
 
   private static EventEngineTask buildEventEngineTask()  {
