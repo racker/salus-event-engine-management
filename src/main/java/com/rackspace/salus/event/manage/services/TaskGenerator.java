@@ -31,7 +31,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskGenerator {
 
-  public TaskGenerator() {
+  private final TaskPartitionIdGenerator partitionIdGenerator;
+
+  public TaskGenerator(
+      TaskPartitionIdGenerator partitionIdGenerator) {
+    this.partitionIdGenerator = partitionIdGenerator;
   }
 
   public EventEngineTask createTask(String tenantId, TaskCU in) {
@@ -41,6 +45,9 @@ public class TaskGenerator {
     } else {
       task = createGenericTask(tenantId, (GenericTaskCU) in);
     }
+
+    int partition = partitionIdGenerator.getPartitionForTask(task);
+    task.setPartition(partition);
 
     return task;
   }
@@ -54,7 +61,6 @@ public class TaskGenerator {
         .setMonitoringSystem(MonitoringSystem.SALUS.name())
         .setTaskParameters(in.getTaskParameters());
   }
-
   private EventEngineTask createGenericTask(String tenantId, GenericTaskCU in) {
     return new GenericEventEngineTask()
         .setMeasurement(in.getMeasurement())
