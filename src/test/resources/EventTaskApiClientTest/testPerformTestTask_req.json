@@ -1,5 +1,6 @@
 {
   "task": {
+    "monitoringSystem": "uim",
     "measurement": "mem",
     "taskParameters": {
       "criticalStateDuration": 2,
