@@ -40,6 +40,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -59,6 +60,9 @@ public class TasksServiceTest {
 
   @Autowired
   TaskGenerator taskGenerator;
+
+  @MockBean
+  TaskPartitionIdGenerator partitionIdGenerator;
 
   @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
@@ -101,7 +105,8 @@ public class TasksServiceTest {
         .setName("task-1")
         .setTenantId("t-1")
         .setTaskParameters(new EventEngineTaskParameters())
-        .setMonitoringSystem("SALUS");
+        .setMonitoringSystem("SALUS")
+        .setPartition(0);
     eventEngineTaskRepository.save(eventEngineTask);
   }
 
@@ -143,13 +148,13 @@ public class TasksServiceTest {
     UUID uuid = UUID.randomUUID();
     final GenericTaskCU taskIn = buildCreateTask();
 
-    final EventEngineTask eventEngineTask = new GenericEventEngineTask()
+    return new GenericEventEngineTask()
         .setMeasurement(taskIn.getMeasurement())
         .setMonitoringSystem("SALUS")
         .setId(uuid)
         .setTenantId("t-1")
         .setName(taskIn.getName())
-        .setTaskParameters(taskIn.getTaskParameters());
-    return eventEngineTask;
+        .setTaskParameters(taskIn.getTaskParameters())
+        .setPartition(0);
   }
 }

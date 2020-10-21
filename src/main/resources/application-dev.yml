@@ -32,6 +32,8 @@ spring:
     username: dev
     password: pass
     url: jdbc:mysql://localhost:3306/default?verifyServerCertificate=false&useSSL=false&requireSSL=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    platform: mysql
   kafka:
     listener:
       missing-topics-fatal: false
