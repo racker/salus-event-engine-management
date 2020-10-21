@@ -121,7 +121,9 @@ public class TasksService {
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             uuid, tenantId)));
     log.info("Updating event engine task={} with new values={}", uuid, taskCU);
+
     boolean redeployTask = false;
+
     if (!StringUtils.isEmpty(taskCU.getName()) && !eventEngineTask.getName().equals(taskCU.getName()))  {
       log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), taskCU.getName());
       eventEngineTask.setName(taskCU.getName());
@@ -135,6 +137,7 @@ public class TasksService {
       redeployTask = true;
     }
 
+    // If these change it can also affect the partitionId of the task
     if (handleSystemSpecificTaskUpdate(taskCU, eventEngineTask)) {
       redeployTask = true;
     }
@@ -165,6 +168,8 @@ public class TasksService {
   /**
    * Determines if any generic task type parameters have changed and updates them if so.
    *
+   * Updates the partitionId if the measurement value changes.
+   *
    * @param taskCU
    * @param eventEngineTask
    * @return True if any value was modified, otherwise false.
@@ -185,6 +190,7 @@ public class TasksService {
           genericTask.getMeasurement(), genericCU.getMeasurement());
 
       genericTask.setMeasurement(genericCU.getMeasurement());
+      taskGenerator.updatePartition(genericTask);
       return true;
     }
     return false;
@@ -192,6 +198,8 @@ public class TasksService {
 
   /**
    * Determines if any salus specific parameters have changed and updates them if so.
+   *
+   * Updates the partitionId if the monitor type or scope changes.
    *
    * @param taskCU
    * @param eventEngineTask
@@ -201,15 +209,23 @@ public class TasksService {
     SalusTaskCU salusCU = (SalusTaskCU) taskCU;
     SalusEventEngineTask salusTask = (SalusEventEngineTask) eventEngineTask;
     boolean updateRequired = false;
+    boolean partitionChanged = false;
 
     if (salusCU.getMonitorType() != null && salusCU.getMonitorType() != salusTask.getMonitorType()) {
       salusTask.setMonitorType(salusCU.getMonitorType());
       updateRequired = true;
+      partitionChanged = true;
     }
     if (salusCU.getMonitorScope() != null && salusCU.getMonitorScope() != salusTask.getMonitorScope()) {
       salusTask.setMonitorScope(salusCU.getMonitorScope());
       updateRequired = true;
+      partitionChanged = true;
     }
+
+    if (partitionChanged) {
+      taskGenerator.updatePartition(salusTask);
+    }
+
     return updateRequired;
   }
 }
