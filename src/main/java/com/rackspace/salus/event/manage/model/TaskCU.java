@@ -18,7 +18,7 @@ package com.rackspace.salus.event.manage.model;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Create;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Test;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;

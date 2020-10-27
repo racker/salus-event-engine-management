@@ -20,11 +20,10 @@ package com.rackspace.salus.event.manage.web.model;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.rackspace.monplat.protocol.UniversalMetricFrame;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.common.web.View;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.Data;
@@ -46,7 +45,7 @@ public abstract class EventEngineTaskDTO {
   EventEngineTaskParameters taskParameters;
   String createdTimestamp;
   String updatedTimestamp;
-  UniversalMetricFrame.MonitoringSystem monitoringSystem;
+  MonitoringSystem monitoringSystem;
 
   @JsonView(View.Admin.class)
   Integer partitionId;
@@ -54,7 +53,7 @@ public abstract class EventEngineTaskDTO {
 
   public EventEngineTaskDTO(EventEngineTask entity) {
     this.id = entity.getId();
-    this.monitoringSystem = MonitoringSystem.valueOf(entity.getMonitoringSystem());
+    this.monitoringSystem = entity.getMonitoringSystem();
     this.tenantId = entity.getTenantId();
     this.name = entity.getName();
     this.taskParameters = entity.getTaskParameters();

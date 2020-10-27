@@ -22,10 +22,10 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.common.web.View;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
 import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import org.junit.Test;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
@@ -53,7 +53,7 @@ public class EventEngineTaskDTOTest {
   @Test
   public void testFieldsCovered() throws Exception {
     final GenericEventEngineTask task = (GenericEventEngineTask) podamFactory.manufacturePojo(GenericEventEngineTask.class)
-        .setMonitoringSystem(MonitoringSystem.SCOM.name());
+        .setMonitoringSystem(MonitoringSystem.SCOM);
 
     final EventEngineTaskDTO dto = new GenericEventEngineTaskDTO(task);
 
@@ -68,7 +68,7 @@ public class EventEngineTaskDTOTest {
     assertThat(dto.getUpdatedTimestamp(), notNullValue());
 
     assertThat(dto.getId(), equalTo(task.getId()));
-    assertThat(dto.getMonitoringSystem(), equalTo(MonitoringSystem.valueOf(task.getMonitoringSystem())));
+    assertThat(dto.getMonitoringSystem(), equalTo(task.getMonitoringSystem()));
     assertThat(dto.getTenantId(), equalTo(task.getTenantId()));
     assertThat(dto.getName(), equalTo(task.getName()));
     assertThat(dto.getMeasurement(), equalTo(task.getMeasurement()));
