@@ -110,7 +110,7 @@ public class TasksServiceTest {
     GenericEventEngineTask task = (GenericEventEngineTask) retrieved.get();
     // timestamps are returned with slightly less precision on the retrieval
     assertThat(task).isEqualToIgnoringGivenFields(created, "createdTimestamp", "updatedTimestamp");
-    assertThat(task.getMonitoringSystem()).isEqualTo("UIM");
+    assertThat(task.getMonitoringSystem()).isEqualTo(MonitoringSystem.UIM);
     assertThat(task.getMeasurement()).isEqualTo(taskIn.getMeasurement());
     assertThat(task.getPartition()).isEqualTo(6);
 
@@ -132,7 +132,7 @@ public class TasksServiceTest {
     SalusEventEngineTask task = (SalusEventEngineTask) retrieved.get();
     // timestamps are returned with slightly less precision on the retrieval
     assertThat(task).isEqualToIgnoringGivenFields(created, "createdTimestamp", "updatedTimestamp");
-    assertThat(task.getMonitoringSystem()).isEqualTo("SALUS");
+    assertThat(task.getMonitoringSystem()).isEqualTo(MonitoringSystem.SALUS);
     assertThat(task.getMonitorType()).isEqualTo(taskIn.getMonitorType());
     assertThat(task.getMonitorScope()).isEqualTo(taskIn.getMonitorScope());
     assertThat(task.getPartition()).isEqualTo(6);
