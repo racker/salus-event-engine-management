@@ -29,9 +29,10 @@ import lombok.Data;
 
 
 @Data
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "monitoringSystem", defaultImpl = GenericTaskCU.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+    property = "monitoringSystem", visible = true, defaultImpl = GenericTaskCU.class)
 @JsonSubTypes({
-    @JsonSubTypes.Type(name = "salus", value= SalusTaskCU.class)
+    @JsonSubTypes.Type(name = "SALUS", value= SalusTaskCU.class)
 })
 public abstract class TaskCU {
 
