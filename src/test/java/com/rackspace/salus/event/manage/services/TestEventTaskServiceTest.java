@@ -41,16 +41,16 @@ import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.discovery.NoPartitionsAvailableException;
 import com.rackspace.salus.event.manage.config.TestEventTaskProperties;
 import com.rackspace.salus.event.manage.errors.BackendException;
-import com.rackspace.salus.event.manage.model.TaskCU;
+import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData.EventResult;
+import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.EventData;
 import com.rackspace.salus.event.model.kapacitor.KapacitorEvent.SeriesItem;
 import com.rackspace.salus.event.model.kapacitor.Task;
 import com.rackspace.salus.event.model.kapacitor.Task.Stats;
-import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
@@ -179,7 +179,7 @@ public class TestEventTaskServiceTest {
             .setName("cpu")
             .setIvalues(Map.of("usage", 90L))
     ));
-    final String measurementName = request.getTask().getMeasurement();
+    final String measurementName = ((GenericTaskCU) request.getTask()).getMeasurement();
     final String taskId = setupKapacitorTaskId();
 
     final String expectedTaskCreate = JsonTestUtils
@@ -237,7 +237,7 @@ public class TestEventTaskServiceTest {
             .setName("cpu")
             .setIvalues(Map.of("usage", 90L))
     ));
-    final String measurementName = request.getTask().getMeasurement();
+    final String measurementName = ((GenericTaskCU) request.getTask()).getMeasurement();
     final String taskId = setupKapacitorTaskId();
 
     final String expectedTaskCreate = JsonTestUtils
@@ -304,7 +304,7 @@ public class TestEventTaskServiceTest {
             .setName("cpu")
             .setIvalues(Map.of("usage", 90L))
     ));
-    final String measurementName = request.getTask().getMeasurement();
+    final String measurementName = ((GenericTaskCU) request.getTask()).getMeasurement();
     final String taskId = setupKapacitorTaskId();
 
     final String expectedTaskCreate = JsonTestUtils
@@ -491,7 +491,7 @@ public class TestEventTaskServiceTest {
   }
 
   private void verifyTickScriptBuilder(TestTaskRequest request) {
-    verify(tickScriptBuilder).build(eq(request.getTask().getMeasurement()),
+    verify(tickScriptBuilder).build(eq(((GenericTaskCU) request.getTask()).getMeasurement()),
         argThat(params -> {
           // spot check individual parts
           assertThat(params.getStateExpressions())
@@ -581,7 +581,7 @@ public class TestEventTaskServiceTest {
   private TestTaskRequest createTestTaskRequest(List<SimpleNameTagValueMetric> metrics) {
     return new TestTaskRequest()
         .setTask(
-            new TaskCU()
+            new GenericTaskCU()
                 .setMeasurement("cpu")
                 .setTaskParameters(
                     new EventEngineTaskParameters()
@@ -621,6 +621,6 @@ public class TestEventTaskServiceTest {
   private void verifyEventEnginePicker(TestTaskRequest request)
       throws NoPartitionsAvailableException {
     verify(eventEnginePicker).pickRecipient(
-        "t-1", TestEventTaskService.PICKER_RESOURCE_ID, request.getTask().getMeasurement());
+        "t-1", TestEventTaskService.PICKER_RESOURCE_ID, ((GenericTaskCU) request.getTask()).getMeasurement());
   }
 }

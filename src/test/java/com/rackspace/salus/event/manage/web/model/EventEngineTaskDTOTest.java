@@ -22,9 +22,10 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.common.web.View;
-import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
+import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import org.junit.Test;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import uk.co.jemos.podam.api.DefaultClassInfoStrategy;
@@ -39,7 +40,7 @@ public class EventEngineTaskDTOTest {
   {
     try {
       classInfoStrategy = (DefaultClassInfoStrategy) DefaultClassInfoStrategy.getInstance()
-            .addExtraMethod(ComparisonExpression.class, "podamHelper", String.class);
+          .addExtraMethod(ComparisonExpression.class, "podamHelper", String.class);
     } catch (NoSuchMethodException e) {
       e.printStackTrace();
     }
@@ -51,11 +52,13 @@ public class EventEngineTaskDTOTest {
 
   @Test
   public void testFieldsCovered() throws Exception {
-    final EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    final GenericEventEngineTask task = (GenericEventEngineTask) podamFactory.manufacturePojo(GenericEventEngineTask.class)
+        .setMonitoringSystem(MonitoringSystem.SCOM.name());
 
-    final EventEngineTaskDTO dto = new EventEngineTaskDTO(task);
+    final EventEngineTaskDTO dto = new GenericEventEngineTaskDTO(task);
 
     assertThat(dto.getId(), notNullValue());
+    assertThat(dto.getMonitoringSystem(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());
     assertThat(dto.getName(), notNullValue());
     assertThat(dto.getMeasurement(), notNullValue());
@@ -64,6 +67,7 @@ public class EventEngineTaskDTOTest {
     assertThat(dto.getUpdatedTimestamp(), notNullValue());
 
     assertThat(dto.getId(), equalTo(task.getId()));
+    assertThat(dto.getMonitoringSystem(), equalTo(MonitoringSystem.valueOf(task.getMonitoringSystem())));
     assertThat(dto.getTenantId(), equalTo(task.getTenantId()));
     assertThat(dto.getName(), equalTo(task.getName()));
     assertThat(dto.getMeasurement(), equalTo(task.getMeasurement()));

@@ -16,33 +16,15 @@
 
 package com.rackspace.salus.event.manage.model;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Create;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Test;
-import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-
+import lombok.EqualsAndHashCode;
 
 @Data
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
-    property = "monitoringSystem", visible = true, defaultImpl = GenericTaskCU.class)
-@JsonSubTypes({
-    @JsonSubTypes.Type(name = "SALUS", value= SalusTaskCU.class)
-})
-public abstract class TaskCU {
-
-  @NotEmpty(groups = Create.class)
-  String name;
-
+@EqualsAndHashCode(callSuper = true)
+public class GenericTaskCU extends TaskCU {
   @NotNull(groups = {Create.class, Test.class})
-  MonitoringSystem monitoringSystem;
-
-  @NotNull(groups = {Create.class, Test.class})
-  @Valid
-  EventEngineTaskParameters taskParameters;
+  String measurement;
 }
