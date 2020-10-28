@@ -560,7 +560,6 @@ public class TasksApiControllerTest {
       List<MetricExpressionBase> customMetrics) {
     return new EventEngineTask()
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
-        .setKapacitorTaskId("testTaskId")
         .setCreatedTimestamp(Instant.EPOCH)
         .setUpdatedTimestamp(Instant.EPOCH)
         .setTenantId(tenantId)

@@ -20,48 +20,27 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.common.config.MetricNames;
 import com.rackspace.salus.common.config.MetricTagValues;
 import com.rackspace.salus.common.config.MetricTags;
-import com.rackspace.salus.event.common.InfluxScope;
-import com.rackspace.salus.event.discovery.EngineInstance;
-import com.rackspace.salus.event.discovery.EventEnginePicker;
-import com.rackspace.salus.event.manage.errors.BackendException;
 import com.rackspace.salus.event.manage.errors.NotFoundException;
 import com.rackspace.salus.event.manage.model.TaskCU;
-import com.rackspace.salus.event.model.kapacitor.DbRp;
-import com.rackspace.salus.event.model.kapacitor.Task;
-import com.rackspace.salus.event.model.kapacitor.Task.Status;
-import com.rackspace.salus.event.model.kapacitor.Task.Type;
-import com.rackspace.salus.event.manage.services.KapacitorTaskIdGenerator.KapacitorTaskId;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
 public class TasksService {
 
-  private final EventEnginePicker eventEnginePicker;
-  private final RestTemplate restTemplate;
   private final EventEngineTaskRepository eventEngineTaskRepository;
-  private final KapacitorTaskIdGenerator kapacitorTaskIdGenerator;
-  private final TickScriptBuilder tickScriptBuilder;
 
   MeterRegistry meterRegistry;
 
@@ -69,46 +48,31 @@ public class TasksService {
   private final Counter.Builder taskSuccess;
 
   @Autowired
-  public TasksService(EventEnginePicker eventEnginePicker, RestTemplateBuilder restTemplateBuilder,
-                      EventEngineTaskRepository eventEngineTaskRepository,
-                      KapacitorTaskIdGenerator kapacitorTaskIdGenerator,
-                      TickScriptBuilder tickScriptBuilder, MeterRegistry meterRegistry) {
-    this.eventEnginePicker = eventEnginePicker;
-    this.restTemplate = restTemplateBuilder.build();
-    this.eventEngineTaskRepository = eventEngineTaskRepository;
-    this.kapacitorTaskIdGenerator = kapacitorTaskIdGenerator;
-    this.tickScriptBuilder = tickScriptBuilder;
+  public TasksService(MeterRegistry meterRegistry, EventEngineTaskRepository eventEngineTaskRepository) {
 
+    this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.meterRegistry = meterRegistry;
-    taskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED).tag(MetricTags.SERVICE_METRIC_TAG,"Tasks");
+
+    taskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED)
+        .tag(MetricTags.SERVICE_METRIC_TAG, "Tasks");
   }
 
   @Transactional
   public EventEngineTask createTask(String tenantId, TaskCU in) {
-
-    final KapacitorTaskId taskId = kapacitorTaskIdGenerator.generateTaskId(tenantId, in.getMeasurement());
-    final Task task = new Task()
-        .setId(taskId.getKapacitorTaskId())
-        .setType(Type.stream)
-        .setDbrps(Collections.singletonList(new DbRp()
-            .setDb(tenantId)
-            .setRp(InfluxScope.INGEST_RETENTION_POLICY)
-            ))
-        .setScript(tickScriptBuilder.build(in.getMeasurement(), in.getTaskParameters()))
-        .setStatus(Status.enabled);
-
-    sendTaskToKapacitor(task, taskId);
-
     final EventEngineTask eventEngineTask = new EventEngineTask()
-        .setId(taskId.getBaseId())
         .setTenantId(tenantId)
         .setMeasurement(in.getMeasurement())
         .setName(in.getName())
-        .setKapacitorTaskId(taskId.getKapacitorTaskId())
         .setTaskParameters(in.getTaskParameters());
 
     EventEngineTask eventEngineTaskSaved = eventEngineTaskRepository.save(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
+
+    // TODO send task change event to kafka
+
     return eventEngineTaskSaved;
   }
 
@@ -132,33 +96,14 @@ public class TasksService {
       throw new NotFoundException("Unable to find the requested event engine task");
     }
 
-    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
-        false);
-
     eventEngineTaskRepository.delete(eventEngineTask);
-    taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
-  }
 
-  private void deleteTaskFromKapacitors(String kapacitorTaskId,
-                                        Collection<EngineInstance> engineInstances,
-                                        boolean rollback) {
-    if (!rollback && engineInstances.isEmpty()) {
-      throw new IllegalStateException("No event engine instances are available");
-    }
+    // TODO send task change event to kafka
 
-    for (EngineInstance engineInstance : engineInstances) {
-      log.debug("Deleting kapacitorTask={} from instance={}", kapacitorTaskId, engineInstance);
-      try {
-        restTemplate.delete("http://{host}:{port}/kapacitor/v1/tasks/{kapacitorTaskId}",
-            engineInstance.getHost(),
-            engineInstance.getPort(),
-            kapacitorTaskId
-        );
-      } catch (RestClientException e) {
-        log.warn("Failed to delete kapacitorTask={} from engineInstance={}",
-            kapacitorTaskId, engineInstance, e);
-      }
-    }
+    taskSuccess.tags(
+        MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,
+        MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
+        .register(meterRegistry).increment();
   }
 
   public void deleteAllTasksForTenant(String tenant) {
@@ -172,7 +117,7 @@ public class TasksService {
         new NotFoundException(String.format("No Event found for %s on tenant %s",
             uuid, tenantId)));
     log.info("Updating event engine task={} with new values={}", uuid, taskCU);
-    boolean needsUpdate = false;
+    boolean redeployTask = false;
     if(!StringUtils.isEmpty(taskCU.getName()) && !eventEngineTask.getName().equals(taskCU.getName()))  {
       log.info("changing name={} to updatedName={} ",eventEngineTask.getName(), taskCU.getName());
       eventEngineTask.setName(taskCU.getName());
@@ -180,101 +125,19 @@ public class TasksService {
     if(!StringUtils.isEmpty(taskCU.getMeasurement()) && !taskCU.getMeasurement().equals(eventEngineTask.getMeasurement())){
       log.info("changing measurement={} to updatedMeasurement={} ",eventEngineTask.getMeasurement(), taskCU.getMeasurement());
       eventEngineTask.setMeasurement(taskCU.getMeasurement());
-      needsUpdate = true;
+      redeployTask = true;
     }
     if(taskCU.getTaskParameters() != null && !taskCU.getTaskParameters().equals(eventEngineTask.getTaskParameters())){
       log.info("changing task parameters={} to updated taskParameters={} ",eventEngineTask.getTaskParameters(), taskCU.getTaskParameters());
       eventEngineTask.setTaskParameters(taskCU.getTaskParameters());
-      needsUpdate = true;
+      redeployTask = true;
     }
 
-    if(needsUpdate) {
-      eventEngineTask = changeMeasurementAndTaskParameters(eventEngineTask);
+    if (redeployTask) {
+      // TODO trigger redeploy of esper task
     }
     EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
     taskSuccess.tags(MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,MetricTags.OBJECT_TYPE_METRIC_TAG,"task").register(meterRegistry).increment();
     return eventEngineTaskUpdated;
-  }
-
-  private EventEngineTask changeMeasurementAndTaskParameters(EventEngineTask eventEngineTask) {
-    log.info("deleting existing kapacitors event and creating new events");
-    // Remove all kapacitor tasks and its associated ids
-    deleteTaskFromKapacitors(eventEngineTask.getKapacitorTaskId(), eventEnginePicker.pickAll(),
-        false);
-
-    //update existing KapacitorTaskId with tenant and measurement data
-    final KapacitorTaskId taskId = kapacitorTaskIdGenerator
-        .updateTaskId(eventEngineTask.getTenantId(), eventEngineTask.getMeasurement(), eventEngineTask.getId());
-    eventEngineTask.setKapacitorTaskId(taskId.getKapacitorTaskId());
-
-    final Task task = new Task()
-        .setId(eventEngineTask.getKapacitorTaskId())
-        .setType(Type.stream)
-        .setDbrps(Collections.singletonList(new DbRp()
-            .setDb(eventEngineTask.getTenantId())
-            .setRp(InfluxScope.INGEST_RETENTION_POLICY)
-        ))
-        .setScript(tickScriptBuilder.build(eventEngineTask.getMeasurement(), eventEngineTask.getTaskParameters()))
-        .setStatus(Status.enabled);
-
-    sendTaskToKapacitor(task, taskId);
-    return eventEngineTask;
-  }
-
-  private void sendTaskToKapacitor(Task task, KapacitorTaskId taskId) {
-    final List<EngineInstance> applied = new ArrayList<>();
-
-    final Collection<EngineInstance> engineInstances = eventEnginePicker.pickAll();
-    if (engineInstances.isEmpty()) {
-      throw new IllegalStateException("No event engine instances are available");
-    }
-
-    for (EngineInstance engineInstance : engineInstances) {
-      log.debug("Sending task={} to kapacitor={}", taskId, engineInstance);
-
-      final ResponseEntity<Task> response;
-      try {
-        response = restTemplate.postForEntity("http://{host}:{port}/kapacitor/v1/tasks",
-            task,
-            Task.class,
-            engineInstance.getHost(), engineInstance.getPort()
-        );
-      } catch (RestClientException e) {
-
-        // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, true);
-        throw new BackendException(null,
-            String.format("HTTP error while creating task=%s on instance=%s: %s", task, engineInstance, e.getMessage())
-        );
-      }
-
-      if (response.getStatusCode().isError()) {
-        String details = response.getBody() != null ? response.getBody().getError() : "";
-        // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
-        throw new BackendException(response,
-            String.format("HTTP error while creating task=%s on instance=%s: %s", task, engineInstance, details)
-        );
-      }
-
-      final Task respTask = response.getBody();
-      if (respTask == null) {
-        // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
-        throw new BackendException(null,
-            String.format("Empty engine response while creating task=%s on instance=%s", task, engineInstance)
-        );
-      }
-
-      if (StringUtils.hasText(respTask.getError())) {
-        // roll-back the submitted tasks
-        deleteTaskFromKapacitors(taskId.getKapacitorTaskId(), applied, false);
-        throw new BackendException(response,
-            String.format("Engine error while creating task=%s on instance=%s: %s", task, engineInstance, respTask.getError())
-        );
-      }
-
-      applied.add(engineInstance);
-    }
   }
 }

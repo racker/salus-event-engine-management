@@ -3,7 +3,6 @@
   "tenantId": "testSerialization",
   "name": "my-test-task",
   "measurement": "disk",
-  "kapacitorTaskId": "testTaskId",
   "taskParameters": {
     "criticalStateDuration": 5,
     "warningStateDuration": null,
