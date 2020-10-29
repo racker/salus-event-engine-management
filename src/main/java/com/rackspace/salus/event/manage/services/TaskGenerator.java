@@ -63,7 +63,7 @@ public class TaskGenerator {
         .setMonitorScope(in.getMonitorScope())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(in.getMonitoringSystem().name())
+        .setMonitoringSystem(in.getMonitoringSystem())
         .setTaskParameters(in.getTaskParameters());
   }
   private EventEngineTask createGenericTask(String tenantId, GenericTaskCU in) {
@@ -71,7 +71,7 @@ public class TaskGenerator {
         .setMeasurement(in.getMeasurement())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(in.getMonitoringSystem().name())
+        .setMonitoringSystem(in.getMonitoringSystem())
         .setTaskParameters(in.getTaskParameters());
   }
 

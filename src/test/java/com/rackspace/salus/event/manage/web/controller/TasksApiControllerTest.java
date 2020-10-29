@@ -40,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.errors.TestTimedOutException;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
@@ -67,6 +66,7 @@ import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.model.CustomEvalNode;
 import com.rackspace.salus.telemetry.model.DerivativeNode;
 import com.rackspace.salus.telemetry.model.MetricExpressionBase;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
@@ -180,7 +180,7 @@ public class TasksApiControllerTest {
     List<EventEngineTask> tasks = new ArrayList<>();
     for (int i = 0; i < numberOfTasks; i++) {
       tasks.add(podamFactory.manufacturePojo(SalusEventEngineTask.class)
-          .setMonitoringSystem(MonitoringSystem.SALUS.name()));
+          .setMonitoringSystem(MonitoringSystem.SALUS));
     }
 
     int start = page * pageSize;
@@ -246,7 +246,7 @@ public class TasksApiControllerTest {
   @Test
   public void testCreateTask() throws Exception {
     EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
-        .setMonitoringSystem(MonitoringSystem.UIM.name());
+        .setMonitoringSystem(MonitoringSystem.UIM);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
 
@@ -270,7 +270,7 @@ public class TasksApiControllerTest {
   @Test
   public void testUpdateTask() throws Exception {
     EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
-        .setMonitoringSystem(MonitoringSystem.MAAS.name());
+        .setMonitoringSystem(MonitoringSystem.MAAS);
     when(tasksService.updateTask(anyString(), any(), any()))
         .thenReturn(task);
 
@@ -338,7 +338,8 @@ public class TasksApiControllerTest {
 
   @Test
   public void testCreateTask_MissingName() throws Exception {
-    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
+        .setMonitoringSystem(MonitoringSystem.UIM);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
 
@@ -572,7 +573,7 @@ public class TasksApiControllerTest {
     return new GenericEventEngineTask()
         .setMeasurement("disk")
         .setPartition(8)
-        .setMonitoringSystem(MonitoringSystem.UIM.name())
+        .setMonitoringSystem(MonitoringSystem.UIM)
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
         .setCreatedTimestamp(Instant.EPOCH)
         .setUpdatedTimestamp(Instant.EPOCH)

@@ -25,7 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.SalusTaskCU;
@@ -39,6 +38,7 @@ import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.model.ConfigSelectorScope;
 import com.rackspace.salus.telemetry.model.MonitorType;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import com.rackspace.salus.telemetry.model.NotFoundException;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import com.rackspace.salus.test.EnableTestContainersDatabase;
@@ -110,7 +110,7 @@ public class TasksServiceTest {
     GenericEventEngineTask task = (GenericEventEngineTask) retrieved.get();
     // timestamps are returned with slightly less precision on the retrieval
     assertThat(task).isEqualToIgnoringGivenFields(created, "createdTimestamp", "updatedTimestamp");
-    assertThat(task.getMonitoringSystem()).isEqualTo("UIM");
+    assertThat(task.getMonitoringSystem()).isEqualTo(MonitoringSystem.UIM);
     assertThat(task.getMeasurement()).isEqualTo(taskIn.getMeasurement());
     assertThat(task.getPartition()).isEqualTo(6);
 
@@ -132,7 +132,7 @@ public class TasksServiceTest {
     SalusEventEngineTask task = (SalusEventEngineTask) retrieved.get();
     // timestamps are returned with slightly less precision on the retrieval
     assertThat(task).isEqualToIgnoringGivenFields(created, "createdTimestamp", "updatedTimestamp");
-    assertThat(task.getMonitoringSystem()).isEqualTo("SALUS");
+    assertThat(task.getMonitoringSystem()).isEqualTo(MonitoringSystem.SALUS);
     assertThat(task.getMonitorType()).isEqualTo(taskIn.getMonitorType());
     assertThat(task.getMonitorScope()).isEqualTo(taskIn.getMonitorScope());
     assertThat(task.getPartition()).isEqualTo(6);
@@ -309,7 +309,7 @@ public class TasksServiceTest {
         .setName(taskIn.getName())
         .setTenantId("t-1")
         .setTaskParameters(taskIn.getTaskParameters())
-        .setMonitoringSystem(taskIn.getMonitoringSystem().name())
+        .setMonitoringSystem(taskIn.getMonitoringSystem())
         .setPartition(0);
     return eventEngineTaskRepository.save(eventEngineTask);
   }
@@ -329,7 +329,7 @@ public class TasksServiceTest {
         .setName(taskIn.getName())
         .setTenantId("t-1")
         .setTaskParameters(taskIn.getTaskParameters())
-        .setMonitoringSystem(taskIn.getMonitoringSystem().name())
+        .setMonitoringSystem(taskIn.getMonitoringSystem())
         .setPartition(0);
     return eventEngineTaskRepository.save(eventEngineTask);
   }

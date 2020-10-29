@@ -25,6 +25,7 @@ import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.model.ConfigSelectorScope;
 import com.rackspace.salus.telemetry.model.MonitorType;
+import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import java.time.Instant;
 import java.util.UUID;
 import org.apache.kafka.common.InvalidRecordException;
@@ -56,7 +57,7 @@ public class TaskPartitionIdGeneratorTest {
         .setName("myName")
         .setTenantId("t-2000")
         .setTaskParameters(null)
-        .setMonitoringSystem("UIM");
+        .setMonitoringSystem(MonitoringSystem.UIM);
 
     int id = taskPartitionIdGenerator.getPartitionForTask(eventEngineTask);
 
@@ -79,7 +80,7 @@ public class TaskPartitionIdGeneratorTest {
         .setName("myName")
         .setTenantId("t-3000")
         .setTaskParameters(null)
-        .setMonitoringSystem("UIM")
+        .setMonitoringSystem(MonitoringSystem.UIM)
         .setPartition(0);
 
     id = taskPartitionIdGenerator.getPartitionForTask(eventEngineTask2);
@@ -88,7 +89,7 @@ public class TaskPartitionIdGeneratorTest {
     // changing any other fields doesn't alter partition
     eventEngineTask2
         .setId(UUID.randomUUID())
-        .setMonitoringSystem("SCOM")
+        .setMonitoringSystem(MonitoringSystem.SCOM)
         .setTaskParameters(new EventEngineTaskParameters())
         .setCreatedTimestamp(Instant.now())
         .setUpdatedTimestamp(Instant.EPOCH)
@@ -107,7 +108,7 @@ public class TaskPartitionIdGeneratorTest {
         .setName("myName")
         .setTenantId("t-2000")
         .setTaskParameters(null)
-        .setMonitoringSystem("UIM");
+        .setMonitoringSystem(MonitoringSystem.UIM);
 
     int id = taskPartitionIdGenerator.getPartitionForTask(eventEngineTask);
 
@@ -131,7 +132,7 @@ public class TaskPartitionIdGeneratorTest {
         .setName("myName")
         .setTenantId("t-3000")
         .setTaskParameters(null)
-        .setMonitoringSystem("UIM");
+        .setMonitoringSystem(MonitoringSystem.UIM);
 
     id = taskPartitionIdGenerator.getPartitionForTask(eventEngineTask2);
     assertThat(id).isEqualTo(25);
@@ -139,7 +140,7 @@ public class TaskPartitionIdGeneratorTest {
     // changing any other fields doesn't alter partition
     eventEngineTask2
         .setId(UUID.randomUUID())
-        .setMonitoringSystem("SALUS")
+        .setMonitoringSystem(MonitoringSystem.SALUS)
         .setTaskParameters(new EventEngineTaskParameters())
         .setCreatedTimestamp(Instant.now())
         .setUpdatedTimestamp(Instant.EPOCH)
