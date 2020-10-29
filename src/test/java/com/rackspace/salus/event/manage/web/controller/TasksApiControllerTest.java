@@ -338,7 +338,8 @@ public class TasksApiControllerTest {
 
   @Test
   public void testCreateTask_MissingName() throws Exception {
-    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class);
+    EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
+        .setMonitoringSystem(MonitoringSystem.UIM);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
 

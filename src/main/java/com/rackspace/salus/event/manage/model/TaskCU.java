@@ -18,6 +18,7 @@ package com.rackspace.salus.event.manage.model;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Create;
 import com.rackspace.salus.event.manage.model.ValidationGroups.Test;
@@ -29,8 +30,9 @@ import lombok.Data;
 
 
 @Data
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
-    property = "monitoringSystem", visible = true, defaultImpl = GenericTaskCU.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = As.EXISTING_PROPERTY,
+    property = "monitoringSystem", defaultImpl = GenericTaskCU.class,
+    visible = true)
 @JsonSubTypes({
     @JsonSubTypes.Type(name = "SALUS", value= SalusTaskCU.class)
 })
