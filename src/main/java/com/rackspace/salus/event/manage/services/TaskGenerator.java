@@ -16,7 +16,6 @@
 
 package com.rackspace.salus.event.manage.services;
 
-import com.rackspace.monplat.protocol.UniversalMetricFrame.MonitoringSystem;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.SalusTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
@@ -31,7 +30,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskGenerator {
 
-  public TaskGenerator() {
+  private final TaskPartitionIdGenerator partitionIdGenerator;
+
+  public TaskGenerator(
+      TaskPartitionIdGenerator partitionIdGenerator) {
+    this.partitionIdGenerator = partitionIdGenerator;
   }
 
   public EventEngineTask createTask(String tenantId, TaskCU in) {
@@ -42,6 +45,15 @@ public class TaskGenerator {
       task = createGenericTask(tenantId, (GenericTaskCU) in);
     }
 
+    int partition = partitionIdGenerator.getPartitionForTask(task);
+    task.setPartition(partition);
+
+    return task;
+  }
+
+  public EventEngineTask updatePartition(EventEngineTask task) {
+    int partition = partitionIdGenerator.getPartitionForTask(task);
+    task.setPartition(partition);
     return task;
   }
 
@@ -51,16 +63,15 @@ public class TaskGenerator {
         .setMonitorScope(in.getMonitorScope())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(MonitoringSystem.SALUS.name())
+        .setMonitoringSystem(in.getMonitoringSystem().name())
         .setTaskParameters(in.getTaskParameters());
   }
-
   private EventEngineTask createGenericTask(String tenantId, GenericTaskCU in) {
     return new GenericEventEngineTask()
         .setMeasurement(in.getMeasurement())
         .setTenantId(tenantId)
         .setName(in.getName())
-        .setMonitoringSystem(MonitoringSystem.SALUS.name())
+        .setMonitoringSystem(in.getMonitoringSystem().name())
         .setTaskParameters(in.getTaskParameters());
   }
 

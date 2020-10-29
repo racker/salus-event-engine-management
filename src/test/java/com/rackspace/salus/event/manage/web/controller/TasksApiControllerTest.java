@@ -571,6 +571,7 @@ public class TasksApiControllerTest {
       List<MetricExpressionBase> customMetrics) {
     return new GenericEventEngineTask()
         .setMeasurement("disk")
+        .setPartition(8)
         .setMonitoringSystem(MonitoringSystem.UIM.name())
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
         .setCreatedTimestamp(Instant.EPOCH)
