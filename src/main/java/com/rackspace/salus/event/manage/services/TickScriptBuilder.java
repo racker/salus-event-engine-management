@@ -104,11 +104,8 @@ public class TickScriptBuilder {
         .labelsAvailable(labelsAvailable)
         .measurement(measurement)
         .details("task={{.TaskName}}")
-        .infoExpression(buildTICKExpression(expressionsByState.get(TaskState.INFO)))
         .warnExpression(buildTICKExpression(expressionsByState.get(TaskState.WARNING)))
         .critExpression(buildTICKExpression(expressionsByState.get(TaskState.CRITICAL)))
-        .infoCount(taskParameters.getInfoStateDuration() != null ?
-            String.format("\"info_count\" >= %d", taskParameters.getInfoStateDuration()): null)
         .warnCount(taskParameters.getWarningStateDuration() != null ?
             String.format("\"warn_count\" >= %d", taskParameters.getWarningStateDuration()): null)
         .critCount(taskParameters.getCriticalStateDuration() != null ?
@@ -239,10 +236,8 @@ public class TickScriptBuilder {
     String messageText;
     String critCount;
     String warnCount;
-    String infoCount;
     String critExpression;
     String warnExpression;
-    String infoExpression;
     @Default
     Integer windowLength = null;
     @Default
