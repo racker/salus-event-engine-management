@@ -8,7 +8,7 @@
       "infoStateDuration": 2,
       "stateExpressions": [
         {
-          "state": "INFO",
+          "state": "OK",
           "message": "info threshold was hit",
           "expression": {
             "type": "comparison",
