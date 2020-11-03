@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
@@ -36,6 +37,7 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.Comparis
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
+import com.rackspace.salus.telemetry.messaging.TaskChangeEvent;
 import com.rackspace.salus.telemetry.model.ConfigSelectorScope;
 import com.rackspace.salus.telemetry.model.MonitorType;
 import com.rackspace.salus.telemetry.model.MonitoringSystem;
@@ -81,6 +83,9 @@ public class TasksServiceTest {
   @MockBean
   TaskPartitionIdGenerator partitionIdGenerator;
 
+  @MockBean
+  TaskEventProducer taskEventProducer;
+
   @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
 
@@ -115,6 +120,14 @@ public class TasksServiceTest {
     assertThat(task.getPartition()).isEqualTo(6);
 
     verify(partitionIdGenerator).getPartitionForTask(created);
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(created.getTenantId())
+            .setTaskId(created.getId())
+            .setPartitionId(created.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
@@ -138,6 +151,14 @@ public class TasksServiceTest {
     assertThat(task.getPartition()).isEqualTo(6);
 
     verify(partitionIdGenerator).getPartitionForTask(created);
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(created.getTenantId())
+            .setTaskId(created.getId())
+            .setPartitionId(created.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
@@ -146,11 +167,18 @@ public class TasksServiceTest {
     Optional<EventEngineTask> retrieved = eventEngineTaskRepository.findById(created.getId());
     assertThat(retrieved).isPresent();
 
-
     tasksService.deleteTask(created.getTenantId(), created.getId());
 
     retrieved = eventEngineTaskRepository.findById(created.getId());
     assertThat(retrieved).isEmpty();
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(created.getTenantId())
+            .setTaskId(created.getId())
+            .setPartitionId(created.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
@@ -163,6 +191,8 @@ public class TasksServiceTest {
         .isInstanceOf(NotFoundException.class)
         .hasMessage(String.format("No task found for %s on tenant %s",
             id, tenantId));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
@@ -179,12 +209,14 @@ public class TasksServiceTest {
         .isInstanceOf(NotFoundException.class)
         .hasMessage(String.format("No task found for %s on tenant %s",
             created.getId(), wrongTenantId));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
   public void testDeleteAllTasksForTenant() {
-    saveSalusTask();
-    saveSalusTask();
+    EventEngineTask task1 = saveSalusTask();
+    EventEngineTask task2 = saveSalusTask();
 
     Page<EventEngineTask> retrieved = eventEngineTaskRepository.findByTenantId(
         "t-1", Pageable.unpaged());
@@ -194,6 +226,19 @@ public class TasksServiceTest {
 
     retrieved = eventEngineTaskRepository.findByTenantId("t-1", Pageable.unpaged());
     assertThat(retrieved).isEmpty();
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(task1.getTenantId())
+            .setTaskId(task1.getId())
+            .setPartitionId(task1.getPartition()));
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(task2.getTenantId())
+            .setTaskId(task2.getId())
+            .setPartitionId(task2.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Test
@@ -212,6 +257,8 @@ public class TasksServiceTest {
     assertThat(retrieved.get().getPartition()).isEqualTo(0); // partition is unchanged
 
     verify(partitionIdGenerator, never()).getPartitionForTask(saved);
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   @Transactional
@@ -237,6 +284,14 @@ public class TasksServiceTest {
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
 
     verify(partitionIdGenerator).getPartitionForTask(saved);
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(task.getTenantId())
+            .setTaskId(task.getId())
+            .setPartitionId(task.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   /**
@@ -264,6 +319,14 @@ public class TasksServiceTest {
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
 
     verify(partitionIdGenerator).getPartitionForTask(saved);
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(task.getTenantId())
+            .setTaskId(task.getId())
+            .setPartitionId(task.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   /**
@@ -291,6 +354,14 @@ public class TasksServiceTest {
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
 
     verify(partitionIdGenerator).getPartitionForTask(saved);
+
+    verify(taskEventProducer).sendTaskChangeEvent(
+        new TaskChangeEvent()
+        .setTenantId(updated.getTenantId())
+        .setTaskId(updated.getId())
+        .setPartitionId(updated.getPartition()));
+
+    verifyNoMoreInteractions(taskEventProducer);
   }
 
   /**

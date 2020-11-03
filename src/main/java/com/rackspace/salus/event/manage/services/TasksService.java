@@ -26,6 +26,7 @@ import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
+import com.rackspace.salus.telemetry.messaging.TaskChangeEvent;
 import com.rackspace.salus.telemetry.model.NotFoundException;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import io.micrometer.core.instrument.Counter;
@@ -46,6 +47,7 @@ public class TasksService {
 
   private final EventEngineTaskRepository eventEngineTaskRepository;
   private final TaskGenerator taskGenerator;
+  private final TaskEventProducer taskEventProducer;
 
   MeterRegistry meterRegistry;
 
@@ -55,11 +57,13 @@ public class TasksService {
   @Autowired
   public TasksService(MeterRegistry meterRegistry,
       EventEngineTaskRepository eventEngineTaskRepository,
-      TaskGenerator taskGenerator) {
+      TaskGenerator taskGenerator,
+      TaskEventProducer taskEventProducer) {
 
     this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.meterRegistry = meterRegistry;
     this.taskGenerator = taskGenerator;
+    this.taskEventProducer = taskEventProducer;
 
     taskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED)
         .tag(MetricTags.SERVICE_METRIC_TAG, "Tasks");
@@ -70,12 +74,12 @@ public class TasksService {
     final EventEngineTask eventEngineTask = taskGenerator.createTask(tenantId, in);
 
     EventEngineTask eventEngineTaskSaved = eventEngineTaskRepository.save(eventEngineTask);
+    sendTaskChangeEvent(eventEngineTaskSaved);
+
     taskSuccess.tags(
         MetricTags.OPERATION_METRIC_TAG, MetricTagValues.CREATE_OPERATION,
         MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
         .register(meterRegistry).increment();
-
-    // TODO send task change event to kafka
 
     return eventEngineTaskSaved;
   }
@@ -96,8 +100,7 @@ public class TasksService {
             id, tenantId)));
 
     eventEngineTaskRepository.delete(eventEngineTask);
-
-    // TODO send task change event to kafka
+    sendTaskChangeEvent(eventEngineTask);
 
     taskSuccess.tags(
         MetricTags.OPERATION_METRIC_TAG, MetricTagValues.REMOVE_OPERATION,
@@ -137,11 +140,11 @@ public class TasksService {
       redeployTask = true;
     }
 
+    EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
     if (redeployTask) {
-      // TODO trigger redeploy of esper task
+      sendTaskChangeEvent(eventEngineTask);
     }
 
-    EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
     taskSuccess.tags(
         MetricTags.OPERATION_METRIC_TAG, MetricTagValues.UPDATE_OPERATION,
         MetricTags.OBJECT_TYPE_METRIC_TAG, "task")
@@ -227,5 +230,18 @@ public class TasksService {
     }
 
     return updateRequired;
+  }
+
+  /**
+   * Send task change event for a particular event task.
+   * @param eventEngineTask The event task that has been modified.
+   */
+  private void sendTaskChangeEvent(EventEngineTask eventEngineTask) {
+    taskEventProducer.sendTaskChangeEvent(
+        new TaskChangeEvent()
+            .setTenantId(eventEngineTask.getTenantId())
+            .setTaskId(eventEngineTask.getId())
+            .setPartitionId(eventEngineTask.getPartition())
+    );
   }
 }
