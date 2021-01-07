@@ -193,7 +193,6 @@ public class TasksService {
           genericTask.getMeasurement(), genericCU.getMeasurement());
 
       genericTask.setMeasurement(genericCU.getMeasurement());
-      taskGenerator.updatePartition(genericTask);
       return true;
     }
     return false;
@@ -212,21 +211,14 @@ public class TasksService {
     SalusTaskCU salusCU = (SalusTaskCU) taskCU;
     SalusEventEngineTask salusTask = (SalusEventEngineTask) eventEngineTask;
     boolean updateRequired = false;
-    boolean partitionChanged = false;
 
     if (salusCU.getMonitorType() != null && salusCU.getMonitorType() != salusTask.getMonitorType()) {
       salusTask.setMonitorType(salusCU.getMonitorType());
       updateRequired = true;
-      partitionChanged = true;
     }
     if (salusCU.getMonitorScope() != null && salusCU.getMonitorScope() != salusTask.getMonitorScope()) {
       salusTask.setMonitorScope(salusCU.getMonitorScope());
       updateRequired = true;
-      partitionChanged = true;
-    }
-
-    if (partitionChanged) {
-      taskGenerator.updatePartition(salusTask);
     }
 
     return updateRequired;

@@ -20,11 +20,8 @@ package com.rackspace.salus.event.manage.services;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 import com.rackspace.salus.event.manage.config.DatabaseConfig;
 import com.rackspace.salus.event.manage.model.GenericTaskCU;
@@ -50,7 +47,6 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,22 +77,14 @@ public class TasksServiceTest {
   TaskGenerator taskGenerator;
 
   @MockBean
-  TaskPartitionIdGenerator partitionIdGenerator;
-
-  @MockBean
   TaskEventProducer taskEventProducer;
 
+  @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") // false report by IntelliJ
   @Autowired
   EventEngineTaskRepository eventEngineTaskRepository;
 
-  @Before
-  public void setup() {
-    when(partitionIdGenerator.getPartitionForTask(any()))
-        .thenReturn(6);
-  }
-
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     eventEngineTaskRepository.deleteAll();
   }
 
@@ -118,8 +106,6 @@ public class TasksServiceTest {
     assertThat(task.getMonitoringSystem()).isEqualTo(MonitoringSystem.UIM);
     assertThat(task.getMeasurement()).isEqualTo(taskIn.getMeasurement());
     assertThat(task.getPartition()).isEqualTo(6);
-
-    verify(partitionIdGenerator).getPartitionForTask(created);
 
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()
@@ -149,8 +135,6 @@ public class TasksServiceTest {
     assertThat(task.getMonitorType()).isEqualTo(taskIn.getMonitorType());
     assertThat(task.getMonitorScope()).isEqualTo(taskIn.getMonitorScope());
     assertThat(task.getPartition()).isEqualTo(6);
-
-    verify(partitionIdGenerator).getPartitionForTask(created);
 
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()
@@ -256,8 +240,6 @@ public class TasksServiceTest {
     assertThat(retrieved.get().getName()).isEqualTo("new task name");
     assertThat(retrieved.get().getPartition()).isEqualTo(0); // partition is unchanged
 
-    verify(partitionIdGenerator, never()).getPartitionForTask(saved);
-
     verifyNoMoreInteractions(taskEventProducer);
   }
 
@@ -282,8 +264,6 @@ public class TasksServiceTest {
     assertThat(task.getMeasurement()).isEqualTo("newMeasurement");
     assertThat(task.getTaskParameters().getCriticalStateDuration()).isEqualTo(15);
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
-
-    verify(partitionIdGenerator).getPartitionForTask(saved);
 
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()
@@ -318,8 +298,6 @@ public class TasksServiceTest {
     assertThat(task.getMonitorType()).isEqualTo(MonitorType.mem); // unchanged
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
 
-    verify(partitionIdGenerator).getPartitionForTask(saved);
-
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()
             .setTenantId(task.getTenantId())
@@ -352,8 +330,6 @@ public class TasksServiceTest {
     assertThat(task.getMonitorScope()).isEqualTo(ConfigSelectorScope.LOCAL); // unchanged
     assertThat(task.getMonitorType()).isEqualTo(MonitorType.apache); // changed
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
-
-    verify(partitionIdGenerator).getPartitionForTask(saved);
 
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()
@@ -420,7 +396,7 @@ public class TasksServiceTest {
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setValueName("usage_user")
+                                .setInput("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
@@ -444,7 +420,7 @@ public class TasksServiceTest {
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setValueName("usage_user")
+                                .setInput("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
