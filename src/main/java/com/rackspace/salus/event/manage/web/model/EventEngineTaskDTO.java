@@ -37,7 +37,6 @@ public class EventEngineTaskDTO {
   String tenantId;
 
   String name;
-  String measurement;
   EventEngineTaskParameters taskParameters;
   String createdTimestamp;
   String updatedTimestamp;

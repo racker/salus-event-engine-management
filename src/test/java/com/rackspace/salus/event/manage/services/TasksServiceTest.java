@@ -92,7 +92,6 @@ public class TasksServiceTest {
     // timestamps are returned with slightly less precision on the retrieval
     assertThat(retrieved.get()).isEqualToIgnoringGivenFields(created, "createdTimestamp", "updatedTimestamp");
     assertThat(retrieved.get().getMonitoringSystem()).isEqualTo(MonitoringSystem.SALUS);
-    assertThat(retrieved.get().getPartition()).isEqualTo(6);
 
     verify(taskEventProducer).sendTaskChangeEvent(
         new TaskChangeEvent()

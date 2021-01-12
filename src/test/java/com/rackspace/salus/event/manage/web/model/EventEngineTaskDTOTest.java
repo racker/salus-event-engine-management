@@ -61,7 +61,6 @@ public class EventEngineTaskDTOTest {
     assertThat(dto.getMonitoringSystem(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());
     assertThat(dto.getName(), notNullValue());
-    assertThat(dto.getMeasurement(), notNullValue());
     assertThat(dto.getTaskParameters(), notNullValue());
     assertThat(dto.getPartitionId(), notNullValue());
     assertThat(dto.getCreatedTimestamp(), notNullValue());

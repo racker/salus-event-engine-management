@@ -271,21 +271,6 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask_tooManyDerivativeNodes() throws Exception {
-    String tenantId = RandomStringUtils.randomAlphabetic(8);
-
-    TaskCU create = buildCreateTask(true);
-
-    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
-        .content(objectMapper.writeValueAsString(create))
-        .contentType(MediaType.APPLICATION_JSON)
-        .characterEncoding(StandardCharsets.UTF_8.name()))
-        .andExpect(status().isBadRequest())
-        .andExpect(validationError("taskParameters.customMetrics",
-            "Using multiple 'rate' metrics is not supported."));
-  }
-
-  @Test
   public void testCreateTask_MissingName() throws Exception {
     EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class)
         .setMonitoringSystem(MonitoringSystem.UIM);
