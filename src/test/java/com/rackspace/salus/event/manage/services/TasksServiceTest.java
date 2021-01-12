@@ -251,7 +251,6 @@ public class TasksServiceTest {
 
     GenericTaskCU taskCU = buildGenericCreateTask();
     taskCU.setMeasurement("newMeasurement");
-    taskCU.getTaskParameters().setCriticalStateDuration(15);
 
     final EventEngineTask updated = tasksService.updateTask(saved.getTenantId(), saved.getId(), taskCU);
 
@@ -262,7 +261,6 @@ public class TasksServiceTest {
 
     GenericEventEngineTask task = (GenericEventEngineTask) retrieved.get();
     assertThat(task.getMeasurement()).isEqualTo("newMeasurement");
-    assertThat(task.getTaskParameters().getCriticalStateDuration()).isEqualTo(15);
     assertThat(task.getPartition()).isEqualTo(6); // partition is updated
 
     verify(taskEventProducer).sendTaskChangeEvent(
@@ -391,7 +389,6 @@ public class TasksServiceTest {
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
-                .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
                     new StateExpression()
                         .setExpression(
@@ -415,7 +412,6 @@ public class TasksServiceTest {
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
-                .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
                     new StateExpression()
                         .setExpression(
