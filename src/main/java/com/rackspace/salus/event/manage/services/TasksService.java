@@ -20,12 +20,8 @@ package com.rackspace.salus.event.manage.services;
 import com.rackspace.salus.common.config.MetricNames;
 import com.rackspace.salus.common.config.MetricTagValues;
 import com.rackspace.salus.common.config.MetricTags;
-import com.rackspace.salus.event.manage.model.GenericTaskCU;
-import com.rackspace.salus.event.manage.model.SalusTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
-import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
-import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.messaging.TaskChangeEvent;
 import com.rackspace.salus.telemetry.model.NotFoundException;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
@@ -46,7 +42,6 @@ import org.springframework.util.StringUtils;
 public class TasksService {
 
   private final EventEngineTaskRepository eventEngineTaskRepository;
-  private final TaskGenerator taskGenerator;
   private final TaskEventProducer taskEventProducer;
 
   MeterRegistry meterRegistry;
@@ -56,13 +51,11 @@ public class TasksService {
 
   @Autowired
   public TasksService(MeterRegistry meterRegistry,
-      EventEngineTaskRepository eventEngineTaskRepository,
-      TaskGenerator taskGenerator,
-      TaskEventProducer taskEventProducer) {
+                      EventEngineTaskRepository eventEngineTaskRepository,
+                      TaskEventProducer taskEventProducer) {
 
     this.eventEngineTaskRepository = eventEngineTaskRepository;
     this.meterRegistry = meterRegistry;
-    this.taskGenerator = taskGenerator;
     this.taskEventProducer = taskEventProducer;
 
     taskSuccess = Counter.builder(MetricNames.SERVICE_OPERATION_SUCCEEDED)
@@ -71,7 +64,12 @@ public class TasksService {
 
   @Transactional
   public EventEngineTask createTask(String tenantId, TaskCU in) {
-    final EventEngineTask eventEngineTask = taskGenerator.createTask(tenantId, in);
+
+    final EventEngineTask eventEngineTask = new EventEngineTask()
+        .setTenantId(tenantId)
+        .setName(in.getName())
+        .setMonitoringSystem(in.getMonitoringSystem())
+        .setTaskParameters(in.getTaskParameters());
 
     EventEngineTask eventEngineTaskSaved = eventEngineTaskRepository.save(eventEngineTask);
     sendTaskChangeEvent(eventEngineTaskSaved);
@@ -135,11 +133,6 @@ public class TasksService {
       redeployTask = true;
     }
 
-    // If these change it can also affect the partitionId of the task
-    if (handleSystemSpecificTaskUpdate(taskCU, eventEngineTask)) {
-      redeployTask = true;
-    }
-
     EventEngineTask eventEngineTaskUpdated = eventEngineTaskRepository.save(eventEngineTask);
     if (redeployTask) {
       sendTaskChangeEvent(eventEngineTask);
@@ -154,77 +147,6 @@ public class TasksService {
   }
 
   /**
-   * Helper method which calls the required type specific method.
-   *
-   * @param eventEngineTask
-   * @param taskCU
-   * @return True if any value was modified, otherwise false.
-   */
-  private boolean handleSystemSpecificTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
-    if (eventEngineTask instanceof SalusEventEngineTask && taskCU instanceof SalusTaskCU) {
-      return handleSalusTaskUpdate(taskCU, eventEngineTask);
-    } else {
-      return handleGenericTaskUpdate(taskCU, eventEngineTask);
-    }
-  }
-
-  /**
-   * Determines if any generic task type parameters have changed and updates them if so.
-   *
-   * Updates the partitionId if the measurement value changes.
-   *
-   * @param taskCU
-   * @param eventEngineTask
-   * @return True if any value was modified, otherwise false.
-   */
-  private boolean handleGenericTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
-    if (!(taskCU instanceof GenericTaskCU && eventEngineTask instanceof GenericEventEngineTask)) {
-      throw new IllegalArgumentException(
-          String.format("Invalid fields provided for '%s' task", eventEngineTask.getMonitoringSystem()));
-    }
-
-    GenericTaskCU genericCU = (GenericTaskCU) taskCU;
-    GenericEventEngineTask genericTask = (GenericEventEngineTask) eventEngineTask;
-
-    if (!StringUtils.isEmpty(genericCU.getMeasurement()) &&
-        !genericCU.getMeasurement().equals(genericTask.getMeasurement())) {
-
-      log.info("changing measurement={} to updatedMeasurement={}",
-          genericTask.getMeasurement(), genericCU.getMeasurement());
-
-      genericTask.setMeasurement(genericCU.getMeasurement());
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Determines if any salus specific parameters have changed and updates them if so.
-   *
-   * Updates the partitionId if the monitor type or scope changes.
-   *
-   * @param taskCU
-   * @param eventEngineTask
-   * @return True if any value was modified, otherwise false.
-   */
-  private boolean handleSalusTaskUpdate(TaskCU taskCU, EventEngineTask eventEngineTask) {
-    SalusTaskCU salusCU = (SalusTaskCU) taskCU;
-    SalusEventEngineTask salusTask = (SalusEventEngineTask) eventEngineTask;
-    boolean updateRequired = false;
-
-    if (salusCU.getMonitorType() != null && salusCU.getMonitorType() != salusTask.getMonitorType()) {
-      salusTask.setMonitorType(salusCU.getMonitorType());
-      updateRequired = true;
-    }
-    if (salusCU.getMonitorScope() != null && salusCU.getMonitorScope() != salusTask.getMonitorScope()) {
-      salusTask.setMonitorScope(salusCU.getMonitorScope());
-      updateRequired = true;
-    }
-
-    return updateRequired;
-  }
-
-  /**
    * Send task change event for a particular event task.
    * @param eventEngineTask The event task that has been modified.
    */
@@ -233,7 +155,6 @@ public class TasksService {
         new TaskChangeEvent()
             .setTenantId(eventEngineTask.getTenantId())
             .setTaskId(eventEngineTask.getId())
-            .setPartitionId(eventEngineTask.getPartition())
     );
   }
 }

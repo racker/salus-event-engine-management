@@ -29,12 +29,8 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "monitoringSystem", defaultImpl = GenericEventEngineTaskDTO.class)
-@JsonSubTypes({
-    @JsonSubTypes.Type(name = "salus", value = SalusEventEngineTaskDTO.class)
-})
 @Data @NoArgsConstructor
-public abstract class EventEngineTaskDTO {
+public class EventEngineTaskDTO {
   UUID id;
 
   @JsonView(View.Admin.class)
@@ -49,7 +45,6 @@ public abstract class EventEngineTaskDTO {
 
   @JsonView(View.Admin.class)
   Integer partitionId;
-
 
   public EventEngineTaskDTO(EventEngineTask entity) {
     this.id = entity.getId();
