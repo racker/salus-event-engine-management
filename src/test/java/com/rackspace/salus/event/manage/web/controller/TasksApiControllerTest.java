@@ -42,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
 import com.rackspace.salus.event.manage.errors.TestTimedOutException;
-import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
@@ -61,19 +60,12 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalE
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.LogicalExpression.Operator;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.StateExpression;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
-import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
-import com.rackspace.salus.telemetry.model.CustomEvalNode;
-import com.rackspace.salus.telemetry.model.DerivativeNode;
-import com.rackspace.salus.telemetry.model.MetricExpressionBase;
 import com.rackspace.salus.telemetry.model.MonitoringSystem;
-import com.rackspace.salus.telemetry.model.PercentageEvalNode;
 import com.rackspace.salus.telemetry.model.SimpleNameTagValueMetric;
 import com.rackspace.salus.telemetry.repositories.TenantMetadataRepository;
 import com.rackspace.salus.telemetry.web.TenantVerification;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -179,7 +171,7 @@ public class TasksApiControllerTest {
     int pageSize = 20;
     List<EventEngineTask> tasks = new ArrayList<>();
     for (int i = 0; i < numberOfTasks; i++) {
-      tasks.add(podamFactory.manufacturePojo(SalusEventEngineTask.class)
+      tasks.add(podamFactory.manufacturePojo(EventEngineTask.class)
           .setMonitoringSystem(MonitoringSystem.SALUS));
     }
 
@@ -211,21 +203,7 @@ public class TasksApiControllerTest {
   public void testGetTask_testSerialization() throws Exception {
     String tenantId = "testSerialization";
 
-    List<MetricExpressionBase> customMetrics = List.of(
-        new PercentageEvalNode()
-            .setPart("metric1")
-            .setTotal("metric2")
-            .setAs("xyPercent"),
-        new DerivativeNode()
-            .setMetric("testVal")
-            .setDuration(Duration.ofSeconds(137))
-            .setAs("new_rate"),
-        new CustomEvalNode()
-            .setOperator("-")
-            .setOperands(List.of("field1", "field2"))
-            .setAs("new_field"));
-
-    EventEngineTask task = buildTask(tenantId, customMetrics);
+    EventEngineTask task = buildTask(tenantId);
 
     when(tasksService.getTask(anyString(), any()))
         .thenReturn(Optional.of(task));
@@ -245,7 +223,7 @@ public class TasksApiControllerTest {
 
   @Test
   public void testCreateTask() throws Exception {
-    EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
+    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class)
         .setMonitoringSystem(MonitoringSystem.UIM);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
@@ -269,7 +247,7 @@ public class TasksApiControllerTest {
 
   @Test
   public void testUpdateTask() throws Exception {
-    EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
+    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class)
         .setMonitoringSystem(MonitoringSystem.MAAS);
     when(tasksService.updateTask(anyString(), any(), any()))
         .thenReturn(task);
@@ -293,52 +271,8 @@ public class TasksApiControllerTest {
   }
 
   @Test
-  public void testCreateTask_invalidBasicEvalNode() throws Exception {
-    String tenantId = RandomStringUtils.randomAlphabetic(8);
-
-    List<MetricExpressionBase> customMetrics = List.of(
-        new CustomEvalNode()
-            .setOperands(List.of("metric1", "metric2", "invalidFunction(test, blah)"))
-            .setOperator("+")
-            .setAs("new_metric"));
-
-    TaskCU create = buildCreateTask(true, customMetrics);
-
-    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
-        .content(objectMapper.writeValueAsString(create))
-        .contentType(MediaType.APPLICATION_JSON)
-        .characterEncoding(StandardCharsets.UTF_8.name()))
-        .andExpect(status().isBadRequest())
-        .andExpect(validationError("taskParameters.customMetrics[0]",
-            "Invalid custom metric."));
-  }
-
-  @Test
-  public void testCreateTask_tooManyDerivativeNodes() throws Exception {
-    String tenantId = RandomStringUtils.randomAlphabetic(8);
-
-    List<MetricExpressionBase> customMetrics = List.of(
-        new DerivativeNode()
-            .setMetric("metric1")
-            .setAs("rate1"),
-        new DerivativeNode()
-            .setMetric("metric2")
-            .setAs("rate2"));
-
-    TaskCU create = buildCreateTask(true, customMetrics);
-
-    mockMvc.perform(post("/api/tenant/{tenantId}/tasks", tenantId)
-        .content(objectMapper.writeValueAsString(create))
-        .contentType(MediaType.APPLICATION_JSON)
-        .characterEncoding(StandardCharsets.UTF_8.name()))
-        .andExpect(status().isBadRequest())
-        .andExpect(validationError("taskParameters.customMetrics",
-            "Using multiple 'rate' metrics is not supported."));
-  }
-
-  @Test
   public void testCreateTask_MissingName() throws Exception {
-    EventEngineTask task = podamFactory.manufacturePojo(GenericEventEngineTask.class)
+    EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class)
         .setMonitoringSystem(MonitoringSystem.UIM);
     when(tasksService.createTask(anyString(), any()))
         .thenReturn(task);
@@ -534,28 +468,21 @@ public class TasksApiControllerTest {
   }
 
   private static TaskCU buildCreateTask(boolean setName) {
-    return buildCreateTask(setName, null);
-  }
-
-  private static TaskCU buildCreateTask(boolean setName,
-      List<MetricExpressionBase> customMetrics) {
-    return new GenericTaskCU()
-        .setMeasurement("cpu")
+    return new TaskCU()
         .setMonitoringSystem(MonitoringSystem.UIM)
         .setName(setName ? "this is my name" : null)
         .setTaskParameters(
             new EventEngineTaskParameters()
+                .setMetricGroup("cpu")
                 .setLabelSelector(
                     singletonMap("agent_environment", "localdev")
                 )
                 .setMessageTemplate("The CPU usage was too high")
-                .setCustomMetrics(customMetrics)
-                .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
                     new StateExpression()
                         .setExpression(
                             new ComparisonExpression()
-                                .setValueName("usage_user")
+                                .setInput("usage_user")
                                 .setComparator(Comparator.GREATER_THAN)
                                 .setComparisonValue(75)
                         )
@@ -564,14 +491,7 @@ public class TasksApiControllerTest {
   }
 
   private static EventEngineTask buildTask(String tenantId) {
-    return buildTask(tenantId, null);
-
-  }
-
-  private static EventEngineTask buildTask(String tenantId,
-      List<MetricExpressionBase> customMetrics) {
-    return new GenericEventEngineTask()
-        .setMeasurement("disk")
+    return new EventEngineTask()
         .setPartition(8)
         .setMonitoringSystem(MonitoringSystem.UIM)
         .setId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
@@ -581,10 +501,10 @@ public class TasksApiControllerTest {
         .setName("my-test-task")
         .setTaskParameters(
             new EventEngineTaskParameters()
+                .setMetricGroup("disk")
                 .setLabelSelector(
                     singletonMap("discovered_os", "linux")
                 )
-                .setCriticalStateDuration(5)
                 .setStateExpressions(List.of(
                     new StateExpression()
                         .setState(TaskState.CRITICAL)
@@ -594,16 +514,15 @@ public class TasksApiControllerTest {
                                 .setOperator(Operator.OR)
                                 .setExpressions(List.of(
                                     new ComparisonExpression()
-                                        .setValueName("usage_user")
+                                        .setInput("usage_user")
                                         .setComparator(Comparator.GREATER_THAN)
                                         .setComparisonValue(75),
                                     new ComparisonExpression()
-                                        .setValueName("usage_system")
+                                        .setInput("usage_system")
                                         .setComparator(Comparator.EQUAL_TO)
                                         .setComparisonValue(92)))
                         )
                 ))
-                .setCustomMetrics(customMetrics)
         );
   }
 }

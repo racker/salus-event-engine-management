@@ -3,12 +3,9 @@
   "tenantId": "testSerialization",
   "name": "my-test-task",
   "monitoringSystem": "uim",
-  "measurement": "disk",
   "partitionId": 8,
   "taskParameters": {
-    "criticalStateDuration": 5,
-    "warningStateDuration": null,
-    "infoStateDuration": null,
+    "metricGroup": "disk",
     "messageTemplate": null,
     "stateExpressions": [
       {
@@ -19,13 +16,13 @@
             {
               "type": "comparison",
               "comparator": ">",
-              "valueName": "usage_user",
+              "input": "usage_user",
               "comparisonValue": 75
             },
             {
               "type": "comparison",
               "comparator": "==",
-              "valueName": "usage_system",
+              "input": "usage_system",
               "comparisonValue": 92
             }
           ]
@@ -34,33 +31,11 @@
         "message": "critical threshold was hit"
       }
     ],
-    "customMetrics": [
-      {
-        "type": "percent",
-        "part": "metric1",
-        "total": "metric2",
-        "as": "xyPercent"
-      },
-      {
-        "type": "rate",
-        "metric": "testVal",
-        "duration": "PT2M17S",
-        "as": "new_rate",
-        "nonNegative": false
-      },
-      {
-        "type": "custom",
-        "operands": ["field1", "field2"],
-        "operator": "-",
-        "as": "new_field"
-      }
-    ],
-    "windowLength": null,
-    "windowFields": null,
-    "flappingDetection": false,
     "labelSelector": {
       "discovered_os": "linux"
-    }
+    },
+    "defaultConsecutiveCount": 1,
+    "zoneQuorumCount": 1
   },
   "createdTimestamp": "1970-01-01T00:00:00Z",
   "updatedTimestamp": "1970-01-01T00:00:00Z"

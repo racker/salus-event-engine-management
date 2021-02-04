@@ -16,15 +16,15 @@
 
 package com.rackspace.salus.event.manage.web.model;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.common.web.View;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.ComparisonExpression;
-import com.rackspace.salus.telemetry.entities.subtype.GenericEventEngineTask;
 import com.rackspace.salus.telemetry.model.MonitoringSystem;
 import org.junit.Test;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
@@ -52,16 +52,15 @@ public class EventEngineTaskDTOTest {
 
   @Test
   public void testFieldsCovered() throws Exception {
-    final GenericEventEngineTask task = (GenericEventEngineTask) podamFactory.manufacturePojo(GenericEventEngineTask.class)
+    final EventEngineTask task = podamFactory.manufacturePojo(EventEngineTask.class)
         .setMonitoringSystem(MonitoringSystem.SCOM);
 
-    final EventEngineTaskDTO dto = new GenericEventEngineTaskDTO(task);
+    final EventEngineTaskDTO dto = new EventEngineTaskDTO(task);
 
     assertThat(dto.getId(), notNullValue());
     assertThat(dto.getMonitoringSystem(), notNullValue());
     assertThat(dto.getTenantId(), notNullValue());
     assertThat(dto.getName(), notNullValue());
-    assertThat(dto.getMeasurement(), notNullValue());
     assertThat(dto.getTaskParameters(), notNullValue());
     assertThat(dto.getPartitionId(), notNullValue());
     assertThat(dto.getCreatedTimestamp(), notNullValue());
@@ -71,7 +70,6 @@ public class EventEngineTaskDTOTest {
     assertThat(dto.getMonitoringSystem(), equalTo(task.getMonitoringSystem()));
     assertThat(dto.getTenantId(), equalTo(task.getTenantId()));
     assertThat(dto.getName(), equalTo(task.getName()));
-    assertThat(dto.getMeasurement(), equalTo(task.getMeasurement()));
     assertThat(dto.getTaskParameters(), equalTo(task.getTaskParameters()));
     assertThat(dto.getPartitionId(), equalTo(task.getPartition()));
     assertThat(dto.getCreatedTimestamp(), equalTo(task.getCreatedTimestamp().toString()));

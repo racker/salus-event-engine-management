@@ -4,6 +4,9 @@ spring:
       default-view-inclusion: true
   zipkin:
     enabled: false
+  kafka:
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 management.endpoints.web.exposure.include: "health,jolokia,metrics,loggers"
 management:
   metrics:

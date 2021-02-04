@@ -26,7 +26,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rackspace.salus.event.discovery.EventEnginePicker;
-import com.rackspace.salus.event.manage.model.GenericTaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.TestTaskResult.TestTaskResultData;
@@ -99,7 +98,7 @@ public class EventTaskApiClientTest {
                         new EventData()
                             .setSeries(List.of(
                                 new SeriesItem()
-                                    .setName(((GenericTaskCU)testTaskRequest.getTask()).getMeasurement())
+                                    .setName(testTaskRequest.getTask().getTaskParameters().getMetricGroup())
                             ))
                     )
                     .setLevel("CRITICAL")

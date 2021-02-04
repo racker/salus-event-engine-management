@@ -21,7 +21,6 @@ import com.rackspace.salus.event.manage.model.TaskCU;
 import com.rackspace.salus.event.manage.model.TestTaskRequest;
 import com.rackspace.salus.event.manage.model.TestTaskResult;
 import com.rackspace.salus.event.manage.model.ValidationGroups;
-import com.rackspace.salus.event.manage.services.TaskGenerator;
 import com.rackspace.salus.event.manage.services.TasksService;
 import com.rackspace.salus.event.manage.services.TestEventTaskService;
 import com.rackspace.salus.event.manage.web.model.EventEngineTaskDTO;
@@ -83,7 +82,7 @@ public class TasksApiController {
   ) {
     final EventEngineTask eventEngineTask = tasksService.createTask(tenantId, task);
 
-    return TaskGenerator.generateDto(eventEngineTask);
+    return new EventEngineTaskDTO(eventEngineTask);
   }
 
   @PutMapping("/tenant/{tenantId}/tasks/{uuid}")
@@ -95,7 +94,7 @@ public class TasksApiController {
   ) {
     final EventEngineTask eventEngineTask = tasksService.updateTask(tenantId, uuid, task);
 
-    return TaskGenerator.generateDto(eventEngineTask);
+    return new EventEngineTaskDTO(eventEngineTask);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks/{uuid}")
@@ -105,7 +104,7 @@ public class TasksApiController {
         () -> new NotFoundException(String.format("No task found for %s on tenant %s",
             uuid, tenantId
         )));
-    return TaskGenerator.generateDto(task);
+    return new EventEngineTaskDTO(task);
   }
 
   @GetMapping("/tenant/{tenantId}/tasks")
@@ -115,7 +114,7 @@ public class TasksApiController {
 
     return PagedContent.fromPage(
         tasksService.getTasks(tenantId, pageable)
-            .map(TaskGenerator::generateDto));
+            .map(engineTask -> new EventEngineTaskDTO(engineTask)));
   }
 
   @DeleteMapping("/tenant/{tenantId}/tasks/{taskId}")
